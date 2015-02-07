@@ -1,0 +1,25 @@
+{
+  "name": "mport",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/joekteo/mport.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/joekteo/mport/issues"
+  },
+  "homepage": "https://github.com/joekteo/mport",
+  "dependencies": {
+    "express": "^4.11.2",
+    "grunt": "^0.4.5",
+    "grunt-contrib-jshint": "^0.11.0",
+    "grunt-jscs": "^1.5.0"
+  }
+}
