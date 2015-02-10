@@ -6,7 +6,12 @@ JKT Webpage v2
 - [X] Setup Grunt / jsHint / jscs
 - [X] Setup file structure
 - [X] Get server running
-- [ ] Add Images
+- [X] Setup page structure
+- [ ] Add images
+- [X] Add carousuel
+- [X] Make it responsive
+- [ ] Add Animate.css
+- [ ] Make it DRY
 
 ## Next
 - [ ] Launch on Heroku
