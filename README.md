@@ -2,17 +2,18 @@ JKT Webpage v2
 ==============
 
 # TODO
-- [ ] List TODO items
+- [X] List TODO items
 - [X] Setup Grunt / jsHint / jscs
 - [X] Setup file structure
 - [X] Get server running
 - [X] Setup page structure
-- [ ] Add images
-- [X] Add carousuel
+- [X] Add images
+- [X] Add carousel
 - [X] Make it responsive
-- [ ] Add Animate.css
+- [X] Add Animate.css
 - [ ] Resize images
 - [ ] Add JS commands to navbar
+- [ ] Fix carousel image
 - [ ] Make it DRY
 
 ## Next

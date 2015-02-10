@@ -1,5 +1,5 @@
 @import url(http://fonts.googleapis.com/css?family=Roboto+Condensed);
-/*@import url(http://fonts.googleapis.com/css?family=Lobster);*/
+
 /*** Base Element ***/
 body {
   font-family: 'Roboto Condensed', sans-serif;
@@ -12,20 +12,33 @@ hr {
 
 /*** Navbar ***/
 .navbar-default {
-  background-color: transparent;
   font-family: 'Roboto Condensed', sans-serif;
-  height: 165px;
-}
-
-.navbar-brand {
-  /*font-family: 'Lobster', cursive;*/
+  height: 100px;
 }
 
 .container {
-  margin-top: 100px;
-  /*width: 1050px !important;*/
+  margin-top: 30px;
+}
+/*
+nav.navbar.shrink {
+  min-height: 35px;
 }
 
+nav.shrink a {
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  font-size: 15px;
+}
+
+nav.shrink .navbar-brand {
+  font-size: 25px;
+}
+
+nav.shrink .navbar-toggle {
+  padding: 4px 5px;
+  margin: 8px 15px 8px 0;
+}
+*/
 /*** Greetings ***/
 .greetings-container {
   background: transparent;
@@ -50,48 +63,44 @@ hr {
   padding-left: 20%;
   padding-right: 20%;
   text-align: left;
-
 }
 
 .projects-container {
-  padding: 15px 50px;
+  padding: 18px 50px;
 }
-
 
 #item-mh {
   -moz-transform:scale(0.3);
   transform:scale(0.3);
   -webkit-transform:scale(0.3);
-  margin: -450px 0px;
+  margin: -420px 0px;
 }
 
 /*** Experience ***/
 .experience-container {
   background: #F2D00E;
-  padding-bottom: 80px;
-  text-align: center;
-  margin-bottom: -30px;
-  padding-bottom: 80px;
   font-family: 'Roboto Condensed', sans-serif;
   font-size: 40px;
   letter-spacing: 3.5px;
+  margin-bottom: -30px;
+  padding-bottom: 80px;
+  text-align: center;
 }
 
 .experience-container p {
-  font-size: 12px;
   color: #fff;
+  font-size: 12px;
 }
-
 
 #experience-title {
   background-color: #F2D00E;
-  text-align: center;
   color: #2F2E5E;
   font-family: 'Roboto Condensed', sans-serif;
   font-size: 40px;
   letter-spacing: 3.5px;
   margin-bottom: 35px;
   padding-top: 30px;
+  text-align: center;
 }
 
 .experience-container hr {
@@ -99,27 +108,31 @@ hr {
 }
 
 .experience-content p {
-  padding-bottom: 10px;
+  padding: 10px 0;
+}
+
+.ex-item img {
+  max-width: 45%;
 }
 
 /*** Education ***/
 .education-container {
-  text-align: center;
   background-color: #111111;
   color: #fff;
+  font-family: 'Roboto Condensed', sans-serif;
+  letter-spacing: 3.5px;
   margin-bottom: -30px;
   padding-bottom: 80px;
+  text-align: center;
 }
 
 #education-title {
   background-color: #111111;
-  text-align: center;
   color: #2F2E5E;
-  font-family: 'Roboto Condensed', sans-serif;
   font-size: 40px;
-  letter-spacing: 3.5px;
   margin-bottom: 35px;
   padding-top: 30px;
+  text-align: center;
 }
 
 #education-title hr {
@@ -127,13 +140,13 @@ hr {
 }
 
 .ec-item {
+  max-width: 45%;
   padding: 20px 0 20px 0;
-  height: auto;
-  max-width: 30%;
 }
 
 .education-content p {
-  padding-bottom: 10px;
+  font-size: 12px;
+  padding: 10px 0;
 }
 
 /*** Contact ***/
@@ -179,15 +192,15 @@ hr {
 .fa-2x {
   background-color: transparent;
   border: 2px solid;
+  border-color: #a1855b;
   border-radius: 0px;
+  color: #a1855b;
   margin: 0 20px;
   padding: 12px 7px;
   position: relative;
   text-decoration: none;
   transition: all .3s;
   z-index: 20;
-  border-color: #a1855b;
-  color: #a1855b;
 }
 
 .fa-2x:after {
@@ -210,8 +223,6 @@ hr {
   width: 100%;
 }
 
-
-
 /*** Footer ***/
 .footer-container {
   background-color: #111111;
@@ -222,7 +233,21 @@ hr {
   padding: 40px 0 80px;
 }
 
-/*@media screen and (max-width: 765px) {
-.container {
-  margin-top: 100px;
-}*/
+/*** Media Queries ***/
+@media screen and (max-width: 400px) {
+  .projects-container {
+    /*max-width: 200%;*/
+    /*max-height: 170px;*/
+    height: auto;
+    max-width: 600px;
+    min-height: 350px;
+/*    padding: none;
+    margin: none;*/
+  }
+}
+
+@media screen and (max-width: 720px) {
+  #item-mh {
+    display: none;
+  }
+}

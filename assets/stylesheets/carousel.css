@@ -19,7 +19,7 @@
   background: url(./images/abs.jpg);
 }
 
-.carousel img{
+.carousel img {
   display:block;
   /*width:100%;*/
   max-width:100% !important;
