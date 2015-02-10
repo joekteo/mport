@@ -12,6 +12,8 @@ hr {
 
 /*** Navbar ***/
 .navbar-default {
+  background-color: #3f3f3f !important;
+  border-color: #2a2a2a !important;
   font-family: 'Roboto Condensed', sans-serif;
   height: 100px;
 }
@@ -41,8 +43,6 @@ nav.shrink .navbar-toggle {
 */
 /*** Greetings ***/
 .greetings-container {
-  background: transparent;
-  color: black;
   padding: 10px 80px 70px 80px;
 }
 
@@ -66,7 +66,14 @@ nav.shrink .navbar-toggle {
 }
 
 .projects-container {
-  padding: 18px 50px;
+  padding: 20px 100px;
+  /*background: #353230;*/
+  /*color: red;*/
+}
+
+.projects-container p {
+  font-weight: 200;
+  /*color: #fff;*/
 }
 
 #item-mh {
