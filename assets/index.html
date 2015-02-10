@@ -59,7 +59,7 @@
     <div class="carousel-inner" role="listbox">
       <div class="item active">
         <div class="slider-size">
-          <img class="carousel-img" src="images/macbook.jpg" height="1600" width="2560" alt="...">
+          <img class="carousel-img" src="images/macbook.jpg" alt="">
         </div>
 <!--         <div class="container">
           <div class="carousel-caption">
@@ -69,7 +69,7 @@
       </div>
       <div class="item">
         <div class="slider-size">
-          <img src="images/no12gallery.jpg" height="401" width="600" alt="...">
+          <img src="images/no12gallery.jpg" alt="">
         </div>
 <!--         <div class="container">
           <div class="carousel-caption">
@@ -79,7 +79,7 @@
       </div>
       <div class="item">
         <div class="slider-size">
-          <img src="images/temple.png" height="" width="500%" alt="...">
+          <img src="images/IMG_0742.JPG" alt="">
         </div>
 <!--         <div class="container">
             <div class="carousel-caption">
@@ -109,34 +109,46 @@
     <h3 class="col-md-12 wow bounceInRight animated" style="visibility: visiable;" data-wow-offset="2">Projects <i class="fa fa-clipboard"></i></h3>
   </div> -->
   <div class="projects-container row">
-    <img src="images/prediktapp.png" class="col-md-6 pc-item-1 wow bounceInLeft animated" style="visibility: visiable;" data-wow-offset="2">
-    <img src="images/abramhealth0.png" class="col-md-6 pc-item-2 wow bounceInRight animated" style="visibility: visiable;" data-wow-offset="2">
+    <img src="images/prediktapp01.png" height="350" width="600" class="col-md-6 pc-item-1 wow bounceInLeft animated" style="visibility: visiable;" data-wow-offset="2">
+    <img src="images/prediktapp02.png" height="350" width="600" class="col-md-6 pc-item-2 wow bounceInRight animated" style="visibility: visiable;" data-wow-offset="2">
   </div>
 
   <div class="projects-container row">
-    <img src="images/omdb_angular.png" class="col-md-6 pc-item-3 wow bounceInLeft animated" style="visibility: visiable;" data-wow-offset="2">
-    <img src="images/chattr.png" class="col-md-6 pc-item-4 wow bounceInRight animated" style="visibility: visiable;" data-wow-offset="2">
+    <img src="images/omdb_angular.png" height="350" width="600" class="col-md-6 pc-item-3 wow bounceInLeft animated" style="visibility: visiable;" data-wow-offset="2">
+    <img src="images/chattr.png" height="350" width="1000" class="col-md-6 pc-item-4 wow bounceInRight animated" style="visibility: visiable;" data-wow-offset="2">
   </div>
 
   <div class="projects-container row">
-    <img src="images/ripple1.png" class="col-md-6 pc-item-5 wow bounceInLeft animated" style="visibility: visiable;" data-wow-offset="2">
-    <img src="images/musicholic1.png" class="col-md-6 pc-item-6 wow bounceInRight animated" style="visibility: visiable;" data-wow-offset="2">
+    <img src="images/abramhealth1.png" height="350" width="600" class="col-md-6 pc-item-5 wow bounceInLeft animated" style="visibility: visiable;" data-wow-offset="2">
+    <img src="images/abramhealth2.png" height="350" width="600" class="col-md-6 pc-item-6 wow bounceInRight animated" style="visibility: visiable;" data-wow-offset="2">
     <!-- <img src="images/musicholic2.png" height="573" width="600" class="pc-item-6"> -->
   </div>
+
+  <div class="projects-container row">
+    <img src="images/musicholic.png" class="col-md-6 pc-item-3 wow bounceInLeft animated" id="item-mh" style="visibility: visiable;" data-wow-offset="2">
+    <img src="images/musicholic2.png" class="col-md-6 pc-item-4 wow bounceInRight animated" id="item-mh" style="visibility: visiable;" data-wow-offset="2">
+  </div>
+
+  <div class="projects-container row">
+    <img src="images/ripple1.png" height="350" width="600" class="col-md-6 pc-item-3 wow bounceInLeft animated" style="visibility: visiable;" data-wow-offset="2">
+    <img src="images/ripple2.png" height="350" width="600" class="col-md-6 pc-item-4 wow bounceInRight animated" style="visibility: visiable;" data-wow-offset="2">
+  </div>
+
+
 
   <div class="experience-container">
     <h3 class="animated wow fadeInDown" id="experience-title" data-wow-delay=".5s" -webkit-animation-delay: .5s;>Experience <i class="fa fa-newspaper-o"></i><hr></h3>
     <div class="experience-content row">
       <div class="col-md-4 animated wow fadeInDown" data-wow-delay=".5s" -webkit-animation-delay: .5s;>
-        <img src="images/cyberport.png"></img>
+        <img src="images/cyberport.png" height="50" width="170"></img>
         <p>Assistant Instructor</p>
       </div>
       <div class="col-md-4 animated wow fadeInDown" data-wow-delay=".5s" -webkit-animation-delay: .5s;>
-        <img src="images/railsgirls.png" height="33" width="219"></img>
+        <img src="images/railsgirls.png" height="50" width="170"></img>
         <p>Coach</p>
       </div>
       <div class="col-md-4 cyberport animated wow fadeInDown" data-wow-delay=".5s" -webkit-animation-delay: .5s;>
-        <img src="images/cyberport.png"></img>
+        <img src="images/cyberport.png" height="50" width="170"></img>
         <p>Front-end Developer</p>
       </div>
     </div>
@@ -182,6 +194,7 @@
 new WOW().init();
 
 $(document).ready(function() {
+  $('.carousel-inner').carousel({interval: 3000});
   $('.carousel-inner').swiperight(function() {
     $(this).parent().carousel('prev');
   });

@@ -1,0 +1,1941 @@
+define('detect',[ "has" ], function(a) {
+    function b(a, b) {
+        var c, d = [ "", "-moz-", "-webkit-", "-ms-" ], e = "";
+        for (c = d.length - 1; c >= 0; --c) e += a + ": " + d[c] + b + "; ";
+        return e;
+    }
+    return {
+        init: function(c) {
+            a.add("touch", function(a, b) {
+                return !!("ontouchstart" in window || a.navigator.maxTouchPoints > 0 || a.navigator.msMaxTouchPoints > 0 || a.DocumentTouch && b instanceof DocumentTouch);
+            }), a.add("geolocation", function(a) {
+                return "geolocation" in a.navigator;
+            }), a.add("console", function(a) {
+                return "console" in a && "function" == typeof a.console.log;
+            }), a.add("input-event", function() {
+                return "oninput" in document.documentElement;
+            }), a.add("input-placeholder", function() {
+                var a = document.createElement("input");
+                return "placeholder" in a;
+            }), a.add("input-placeholder-standard", function() {
+                var a = document.createElement("input"), b = "placeholder" in a;
+                return b && (-1 === a.maxLength || 524288 === a.maxLength) && "undefined" !== a.maxLength;
+            }), a.add("csscalc", function() {
+                var a = document.createElement("div");
+                return a.style.cssText = b("width", "calc(10px)"), !!a.style.length;
+            }), a.add("formdata", function(a) {
+                return "FormData" in a && "function" == typeof a.FormData;
+            }), a.add("localstorage", function(a) {
+                return "localStorage" in a && "sessionStorage" in a;
+            }), a.add("built", function() {
+                return !0;
+            }), a.add("last-child", function(a, b) {
+                var c = b.head, d = b.createElement("style"), e = [ "#modernizr-last-child li { display:block; background:#f00; width:100px; height:100px; } ", "#modernizr-last-child li:last-child { background:#00f; width:200px; }" ];
+                d.type = "text/css", d.styleSheet ? d.styleSheet.cssText = e.join("") : d.appendChild(b.createTextNode(e.join(""))), 
+                c.appendChild(d);
+                var f = b.createElement("ul");
+                f.id = "modernizr-last-child", b.body.appendChild(f);
+                var g = b.createElement("li");
+                f.appendChild(g);
+                var h = b.createElement("li");
+                f.appendChild(h);
+                var i = h.offsetWidth > g.offsetWidth;
+                return d.parentNode.removeChild(d), f.parentNode.removeChild(f), i;
+            }), c.addClass(a("touch") ? "has-touch" : "no-has-touch").addClass(a("input-placeholder-standard") ? "has-placeholders" : "no-has-placeholders");
+        }
+    };
+});
+define('be/window',[ "nbd/util/deparam" ], function(a) {
+    "use strict";
+    return {
+        getLocation: function(a) {
+            return a ? window.location[a] : window.location;
+        },
+        setLocation: function(a) {
+            window.location.assign(a);
+        },
+        reloadLocation: function() {
+            window.location.reload();
+        },
+        getSearchObject: function() {
+            var b = this.getLocation("search");
+            return b ? (b = b.substr(1), a(b)) : {};
+        }
+    };
+});
+define('lib/xhr',[ "jquery", "nbd/trait/promise" ], function(a, b) {
+    "use strict";
+    return function() {
+        var c, d = new b(), e = a.ajax.apply(a, arguments);
+        return d.resolve(e), c = d.thenable(), c.abort = e.abort, c;
+    };
+});
+define('be/remoteLogger',[ "be/window", "lib/xhr" ], function(a, b) {
+    "use strict";
+    function c(a) {
+        return Object.keys(a).forEach(function(b) {
+            a[b] = "object" == typeof a[b] ? c(a[b]) : a[b].toString().substr(0, 200);
+        }), a;
+    }
+    function d(a, b, c, d) {
+        if (d = "object" == typeof d ? d : {}, a = a || "ERROR", c = c || "[No message]", 
+        b = b || "client_log", -1 === j.indexOf(a)) throw new Error("Unacceptable Level: " + a);
+        h.push({
+            level: a,
+            channel: b,
+            messages: [ {
+                message: c
+            } ],
+            context: d
+        });
+    }
+    function e() {
+        g = setInterval(function() {
+            h.length && i.send();
+        }, 1e3);
+    }
+    function f() {
+        g && (clearInterval(g), g = null);
+    }
+    var g, h = [], i = {}, j = [ "INFO", "ERROR" ];
+    return i = {
+        log: function(a, b, c, e) {
+            return d(a.toUpperCase(), b, c, e), this;
+        },
+        info: function(a, b, c) {
+            return d("INFO", a, b, c), this;
+        },
+        error: function(a, b, c) {
+            return d("ERROR", a, b, c), this;
+        },
+        send: function() {
+            var a, c, d = [];
+            for (f(); h.length; ) a = h.pop(), d.push(JSON.stringify(a));
+            return c = b({
+                url: "/log",
+                type: "POST",
+                data: {
+                    logs: d
+                }
+            }), c.then(e, e), c;
+        },
+        getQueue: function() {
+            return h;
+        },
+        getSafeSearch: function() {
+            var b = a.getSearchObject();
+            return b = c(b);
+        },
+        init: function() {
+            e();
+        },
+        destroy: function() {
+            f(), h = [];
+        }
+    };
+});
+define('be/errorLogger',[ "has", "be/remoteLogger" ], function(a, b) {
+    "use strict";
+    function c(a) {
+        try {
+            g.error(a.originalError || a, a.requireType, a.requireModules);
+        } catch (b) {}
+    }
+    function d(a, b, c, d, e) {
+        a = e || a;
+        var f;
+        b && "undefined" !== b && c && (f = b + ":" + c, d && (f += ":" + d), g.error(a, f));
+    }
+    function e(b, c) {
+        var d, j, k = {
+            context: c.name
+        };
+        if (a("console")) {
+            switch (c.name && Array.prototype.splice.call(b, 0, 0, "[" + c.name + "]"), c.level) {
+              case g.WARN:
+                d = console.warn;
+                break;
+
+              case g.ERROR:
+                d = console.error;
+                break;
+
+              case g.INFO:
+                d = console.info;
+            }
+            (d || console.log).apply(console, b);
+        }
+        b = Array.prototype.map.call(b, function(a) {
+            return a instanceof Error ? {
+                message: a.message,
+                stack: a.stack,
+                type: "error"
+            } : a instanceof Event ? {
+                message: a.target && a.target.src,
+                type: "event"
+            } : "object" == typeof a && "stack" in a && "message" in a ? {
+                message: a.message,
+                stack: a.stack,
+                name: a.name || "",
+                type: "object"
+            } : {
+                message: a,
+                type: "string"
+            };
+        }), k.level = c.level.name, k.messages = b, j = JSON.stringify(k), h[j] || (i.push(k), 
+        h[j] = !0), e.dirty || (setTimeout(function() {
+            f(i), e.dirty = !1;
+        }, 0), e.dirty = !0);
+    }
+    function f(a) {
+        a && a.length && (a.map(function(a) {
+            b.log(a.level, "js_errors", "Uncaught error", {
+                messages: a.messages
+            });
+        }), b.send(), i = []);
+    }
+    var g, h = {}, i = [];
+    return {
+        _configureLogger: function() {
+            a("built") ? (g.setLevel(g.ERROR), g.setHandler(e)) : (g.setLevel(g.DEBUG), g.useDefaults());
+        },
+        init: function(a, b, e) {
+            g = e, a.onError = c, b.onerror = d, this._configureLogger();
+        }
+    };
+});
+define('lib/scrollpoint',[ "jquery" ], function(a) {
+    "use strict";
+    function b(a) {
+        return j.test(a) || a > 0 && 1 > a;
+    }
+    function c(b) {
+        if (a.isNumeric(b)) return parseFloat(b);
+        var c = j.exec(b);
+        return c ? c[1] / 100 : parseInt(b, 10);
+    }
+    function d(a) {
+        return a.is(k) ? l.height() - (window.innerHeight || k.height()) : a.prop("scrollHeight");
+    }
+    function e(a, c, e) {
+        return c > (b(a) ? a * d(e) : parseInt(a, 10));
+    }
+    function f(b) {
+        var c = "window" === b ? k : a(b);
+        return function() {
+            var a, d, f, g = c.scrollTop();
+            for (a in m[b]) d = m[b][a], f = e(a, g, c), d.cache = d.cache || !1, d.cache !== f && (d.fire(f), 
+            d.cache = f);
+        };
+    }
+    function g(b, d, e) {
+        b = c(b);
+        var f = m[e][b];
+        f || (f = m[e][b] = new a.Callbacks()), f.add(d);
+    }
+    function h(a, b, c) {
+        c = c || "window";
+        var d;
+        if (b) {
+            if (a) return void m[c][a].remove(b);
+            for (d in m[c]) m[c][d].remove(b);
+        } else "string" == typeof a && (m[c][a].empty(), delete m[c][a]), c && delete m[c];
+    }
+    function i(b, c, d) {
+        d = d || "window";
+        var e, h = "window" === d ? k : a(d);
+        m.hasOwnProperty(d) || (m[d] = {}, h.on("scroll", f(d)));
+        {
+            if ("object" != typeof b) return g(b, c, d);
+            for (e in b) g(e, b[e], d);
+        }
+    }
+    var j = /(\d+)%/, k = a(window), l = a(document), m = {};
+    return i.on = i, i.off = h, i;
+});
+define('beff/dom/transitionEnd',[ "nbd/Promise", "nbd/util/diff" ], function(a, b) {
+    "use strict";
+    function c(a) {
+        var b = a.css("transition-duration"), c = a.css("transition-property");
+        return "none" !== c && b.split(",").map(parseFloat).some(Boolean);
+    }
+    function d(a) {
+        var b = window.getComputedStyle(a[0]), c = a.css("transition-property");
+        return ("all" === c ? h : c.split(",")).reduce(function(a, c) {
+            return c = c.trim(), a[c] = b.getPropertyValue(c), a;
+        }, {});
+    }
+    var e = function() {
+        var a, b = document.createElement("aside"), c = {
+            WebkitTransition: "webkitTransitionEnd",
+            MozTransition: "transitionend",
+            OTransition: "oTransitionEnd otransitionend",
+            transition: "transitionend"
+        };
+        for (a in c) if (void 0 !== b.style[a]) return c[a];
+    }(), f = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame, g = function(b) {
+        var c = new a();
+        return this.one(e, function(a) {
+            a.originalEvent.propertyName === b && c.resolve(a);
+        }), c;
+    }, h = [ "transform", "transform-origin", "perspective", "perspective-origin", "color", "opacity", "column-width", "column-count", "column-gap", "column-rule-color", "column-rule-width", "letter-spacing", "text-indent", "word-spacing", "text-decoration-color", "text-shadow", "flex-basis", "flex-grow", "flex-shrink", "order", "background-color", "background-position", "background-size", "border-top-color", "border-right-color", "border-bottom-color", "border-left-color", "border-top-width", "border-right-width", "border-bottom-width", "border-left-width", "border-top-left-radius", "border-top-right-radius", "border-bottom-right-radius", "border-bottom-left-radius", "box-shadow", "margin-top", "margin-right", "margin-bottom", "margin-left", "padding-top", "padding-right", "padding-bottom", "padding-left", "max-height", "min-height", "height", "max-width", "min-width", "width", "visibility", "vertical-align", "bottom", "left", "right", "top", "z-index", "font-weight", "font-stretch", "font-size", "font-size-adjust", "line-height", "outline-color", "outline-width", "outline-offset", "clip", "shape-outside", "shape-margin", "shape-image-threshold" ];
+    return function(h, i) {
+        function j() {
+            f(function() {
+                var c = b(k, d(h)), e = Object.keys(c);
+                e.length ? l.resolve(a.all(e.map(g, h))) : m ? l.resolve(!1) : j();
+            });
+        }
+        var k, l = new a(), m = !1;
+        return i = i || 300, e && c(h) ? (k = d(h), j(), setTimeout(function() {
+            m = !0;
+        }, i)) : l.resolve(!1), l;
+    };
+});
+define('be/View/Basement',[ "jquery", "nbd/View/Element", "beff/dom/transitionEnd" ], function(a, b, c) {
+    "use strict";
+    var d = b.extend({
+        init: function(a) {
+            this._super(a), a && (this.$view = a), this.limit = this.limit.bind(this);
+        },
+        destroy: function() {
+            a(document.body).off(this.scroll), this.$view = null;
+        },
+        template: a,
+        rendered: function() {
+            var b = this;
+            this.$view.on("click", ".js-nav-basement-submenu", function() {
+                window.scrollTo(0, a(this).toggleClass("open").position().top), b.limit(!0);
+            }), /iPhone|iPad|iPod/i.test(navigator.userAgent) && a(document.body).addClass("is-ios"), 
+            /Android/i.test(navigator.userAgent) && a(document.body).addClass("is-android");
+        },
+        limit: function(b) {
+            if (this.$view) {
+                var d = a(document.body).add("#nav-basement");
+                b ? d.css("height", Math.max(this.$view.find(".nav-items").outerHeight(), window.innerHeight)) : c(a(document.body)).then(function() {
+                    d.css("height", "");
+                });
+            }
+        },
+        open: function() {
+            a(document.body).addClass("basement-open"), this.limit(!0), a(window).on("orientationchange", this.limit);
+        },
+        close: function() {
+            a(document.body).removeClass("basement-open"), this.limit(!1), a(window).off("orientationchange", this.limit);
+        },
+        toggle: function() {
+            a(document.body).toggleClass("basement-open");
+            var b = a(document.body).hasClass("basement-open");
+            this.limit(b), a(window)[b ? "on" : "off"]("orientationchange", this.limit);
+        }
+    });
+    return d;
+});
+
+define("require/hgn!templates/discover/search", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div id=\"search-popup\">");t.b("\n" + i);t.b("  <form action=\"/search\" class=\"search-option-confirm\">");t.b("\n" + i);t.b("    <input type=\"search\" class=\"form-text form-text-normal form-search form-searchi\" placeholder=\"Search Behance\" name=\"search\" /><!--");t.b("\n" + i);t.b("    --><a class=\"form-button form-button-light-and-grey close\">Cancel</a>");t.b("\n" + i);t.b("  </form>");t.b("\n" + i);t.b("</div>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+define('be/View/Dialog/Layover/Search',[ "jquery", "be/View/Dialog/Layover", "hgn!templates/discover/search" ], function(a, b, c) {
+    "use strict";
+    var d = b.extend({
+        mustache: c,
+        template: function(b) {
+            return this._super(a.extend({
+                classes: [ "search" ],
+                hide_toolbar: !0
+            }, b));
+        },
+        rendered: function() {
+            this.$view.addClass("mobile-popup-transparent mobile-popup-full-bleed").on("click", ".search-option-confirm", !1).on("click", ".mobile-popup-content, .close", this.hide.bind(this)).on("touchmove", !1);
+        },
+        show: function() {
+            return window.scrollTo(0, 1), this.$view && this.$view.show().find("input").focus();
+        },
+        hide: function() {
+            return this.$view && this.$view.hide();
+        },
+        toggle: function() {
+            return this.$view ? void this._super() : (window.scrollTo(0, 1), this.render(a(document.body)), 
+            void this.$view.find("input").focus());
+        }
+    });
+    return d;
+});
+define('be/navigation',[ "jquery", "nbd/Promise", "nbd/util/media", "lib/scrollpoint", "be/View/Basement", "be/View/Dialog/Layover/Search" ], function(a, b, c, d, e, f) {
+    "use strict";
+    function g(a) {
+        var b = a.find("#nav-basement");
+        k = new f(), j = new e(b), j.rendered(), a.on("click", ".js-header-action-search", function(a) {
+            a.preventDefault(), k.toggle();
+        }).on("click", "#hamburger-button", function(a) {
+            a.preventDefault(), j.toggle();
+        }).on("click", "#top-panel-blocking", function(a) {
+            a.preventDefault(), j.close();
+        });
+    }
+    function h(a) {
+        a = a[0];
+        var b;
+        a.hasClass("logged-in") || (b = l.find("#site-content").offset().top + l.find("#sorts-container").outerHeight() + 60, 
+        d(b, function(a) {
+            l.find(".js-nav-primary").toggleClass("scrolled", a);
+        }));
+    }
+    var i, j, k, l, m = {
+        dom: new b(),
+        phone: new b(),
+        tablet: new b(),
+        desktop: new b()
+    };
+    return c.on("phone:enter", m.phone.resolve).on("tablet:enter", m.tablet.resolve).on("desktop:enter", m.desktop.resolve), 
+    c.getState().forEach(function(a) {
+        m[a].resolve();
+    }), b.all([ m.dom, m.phone ]).then(function(a) {
+        return m.tablet.reject(), a[0];
+    }).then(g), b.all([ m.dom, m.tablet ]).then(function(a) {
+        return m.phone.reject(), a[0];
+    }).then(g), b.all([ m.dom, m.desktop ]).then(h), i = {
+        init: function(b) {
+            l = b || a(document.body), m.dom.resolve(l);
+        }
+    };
+});
+define('be/zenDesk',[ "page_config", "jquery" ], function(a, b) {
+    return {
+        _loadZenBoxScript: function() {
+            var a, b;
+            a = document.createElement("script"), a.src = "//assets.zendesk.com/external/zenbox/v2.6/zenbox.js", 
+            a.type = "text/javascript", a.id = "zenbox-script", document.head.appendChild(a), 
+            b = document.createElement("link"), b.href = "//assets.zendesk.com/external/zenbox/v2.6/zenbox.css", 
+            b.type = "text/css", b.id = "zenbox-style", b.rel = "stylesheet", b.media = "screen, projection", 
+            document.head.appendChild(b);
+        },
+        _init: function() {
+            try {
+                if ("object" != typeof window.Zenbox) return b("#zenbox-script").length || this._loadZenBoxScript(), 
+                setTimeout(this._init.bind(this), 150), !1;
+                "function" == typeof window.Zenbox.init && (window.Zenbox.init(a.ZENBOX), "function" == typeof window.Zenbox.show && window.Zenbox.show());
+            } catch (c) {}
+            return !1;
+        },
+        init: function() {
+            b(".zendesk-footer-link").bind("click", this._init.bind(this));
+        }
+    };
+});
+define('beff/Component',[ "nbd/Class", "nbd/util/construct", "nbd/trait/log", "nbd/trait/pubsub" ], function(a, b, c, d) {
+    "use strict";
+    return a.extend({
+        bind: function() {
+            return this;
+        },
+        unbind: function() {
+            return this;
+        },
+        destroy: function() {
+            this.off().stopListening().unbind();
+        }
+    }, {
+        displayName: "Component",
+        init: function() {
+            var a = b.apply(this, arguments);
+            return a.bind(), a;
+        }
+    }).mixin(c).mixin(d);
+});
+define('sso/config',[ "page_constants", "page_config", "jquery", "nbd/util/media", "beff/Component", "be/login", "be/logout", "be/remoteLogger", "be/window", "be/xhr" ], function(a, b, c, d, e, f, g, h, i, j) {
+    "use strict";
+    function k() {
+        if (a.SSO.REDIRECT_URI) return a.SSO.REDIRECT_URI + l();
+        var b = window.location;
+        return b.protocol + "//" + b.host + b.pathname + l(b.search) + b.hash;
+    }
+    function l(b) {
+        if (b = b || "", b.indexOf(a.SSO.QS_IMS_SIGNIN_ATTEMPT) > -1) return b;
+        var c = a.SSO.QS_IMS_SIGNIN_ATTEMPT, d = 0 === b.indexOf("?") ? "&" : "?";
+        return b + d + c + "=1";
+    }
+    return e.extend({
+        LOG_CHANNEL: "imsjs",
+        _shouldLogout: !1,
+        _pingInterval: null,
+        _logout: g,
+        init: function(b) {
+            this.$context = b;
+            var c = this.LOG_CHANNEL;
+            window.adobeid = {
+                uses_redirect_mode: !0,
+                uses_modal_mode: !1,
+                uses_single_log_out: !1,
+                api_parameters: {
+                    authorize: {
+                        state: {
+                            ac: a.SSO.OMNITURE_AC_STATE
+                        }
+                    }
+                },
+                scope: a.SSO.SCOPES.join(","),
+                onProfile: function(b) {
+                    b || !f.hasToken() || a.SSO.IGNORE_COOKIE_UPDATE || (this._shouldLogout = !0);
+                }.bind(this),
+                onAccessTokenHasExpired: function() {
+                    h.info(c, "Token expired");
+                },
+                onAccessToken: function(a, b) {
+                    f.setToken(a, b);
+                },
+                onError: function(a) {
+                    h.error(c, "General error", {
+                        error: a
+                    });
+                },
+                onReady: function() {
+                    return this._shouldLogout ? (h.info(c, "Logging out via empty profile"), void g(!0)) : (this._initGlobalNav(), 
+                    void this._bindLinks());
+                }.bind(this)
+            };
+        },
+        _loadIMS: function() {
+            require([ a.SSO.URLS.IMS ], function() {}, function() {});
+        },
+        bind: function() {
+            return this._initPing(), a.SSO.LOGIN_DISABLED ? this._bindDisabledLinks() : void this._loadIMS();
+        },
+        destroy: function() {
+            this.$context.off(".sso-config"), clearInterval(this._pingInterval), this._pingInterval = null;
+        },
+        _initPing: function() {
+            function a() {
+                if ("undefined" != typeof window.adobeIMS && "undefined" != typeof window.adobeid) {
+                    var a, b = null, c = window.adobeIMS, e = {
+                        client_id: c.getClientID()
+                    };
+                    a = c.getUrlForApiCall(c.IMSAPIs.check, b, e), c._ajaxGet(a, function(b) {
+                        "object" == typeof b && b.access_token || h.info(d, "Logging user out via ping", {
+                            data: b,
+                            url: a
+                        }).send().then(g, g), b.expires_in && !b.expiresAtMilliseconds && (b.expiresAtMilliseconds = Date.now() + b.expires_in), 
+                        f.setToken(b.access_token, b);
+                    }, "jsonp");
+                }
+            }
+            function b() {
+                j({
+                    url: "/v1/ping",
+                    type: "GET",
+                    dataType: "html"
+                });
+                try {
+                    a();
+                } catch (b) {
+                    h.error(d, "Unable to check access token", {
+                        exception: b
+                    });
+                }
+            }
+            var d = this.LOG_CHANNEL;
+            c(document.body).hasClass("logged-in") && (this._pingInterval = setInterval(b, this.constructor.PING_INTERVAL));
+        },
+        _initGlobalNav: function() {
+            function b() {
+                c.removeClass("wait"), d.openSection && d.openSection("profile");
+            }
+            var c = this.$context, d = {};
+            require([ a.GLOBALNAV.URLS.JS, "css!" + a.GLOBALNAV.URLS.CSS ], function() {
+                d = new window.AdobeGlobalNav({
+                    adobeid: window.adobeid,
+                    behanceProfile: void 0,
+                    sections: [ "profile" ]
+                });
+            }, function() {}), c.on("click.sso-config", ".js-globalnav-layover", function(d) {
+                c.addClass("wait"), require([ a.TYPEKIT.URL + a.TYPEKIT.KIT_IDS.ADOBE + ".js" ], function() {
+                    try {
+                        window.Typekit.load();
+                    } catch (a) {}
+                    b();
+                }, b), d.preventDefault();
+            });
+        },
+        _bindDisabledLinks: function() {
+            this.$context.on("click.sso-config", ".js-adobeid-signup, .js-adobeid-signin", function(b) {
+                b.preventDefault(), i.setLocation(a.SSO.URLS.LOGIN);
+            }).on("click.sso-config", ".js-adobeid-signout", function(a) {
+                a.preventDefault(), this._logout();
+            }.bind(this));
+        },
+        _bindLinks: function() {
+            var b = this.LOG_CHANNEL, e = this.constructor.signIn, g = this.constructor.signUp;
+            this.$context.on("click.sso-config", ".js-adobeid-signup", function(e) {
+                if (e.preventDefault(), f.hasToken()) return void j({
+                    url: a.SSO.URLS.AUTH_CHECK
+                }).then(i.reloadLocation);
+                var k = c(this).data("adobeid-signup-destination"), l = c(this).data("adobeid-signup-enable-login"), m = {
+                    redirect_uri: a.SSO.URLS.LOGIN
+                };
+                k || (k = d.is("phone") ? a.SSO.URLS.ACTIVITY : a.SSO.URLS.ONBOARDING), m.redirect_uri += "?destination=" + k, 
+                l && (m.idp_flow = "create_account", m.el = 1), h.info(b, "Attempting signUp").send().then(g.bind(null, m), g.bind(null, m));
+            }).on("click.sso-config", ".js-adobeid-signin", function(a) {
+                a.preventDefault(), h.info(b, "Attempting signIn").send().then(e, e);
+            }).on("click.sso-config", ".js-adobeid-signout", function(a) {
+                a.preventDefault(), this._logout();
+            }.bind(this));
+        }
+    }, {
+        PING_INTERVAL: 6e5,
+        signIn: function() {
+            f.clearLoggedOutCookie(), window.adobeIMS.signIn({
+                redirect_uri: k()
+            });
+        },
+        signUp: function(a) {
+            f.clearLoggedOutCookie(), window.adobeIMS.signUp(a);
+        }
+    });
+});
+define('deprecated/globalAjax',[ "jquery", "be/postmessage", "sso/config" ], function(a, b, c) {
+    "use strict";
+    function d(a) {
+        try {
+            return JSON.parse(a.responseText);
+        } catch (b) {
+            return {};
+        }
+    }
+    function e(a) {
+        window.top !== window && a.openBrowser ? b({
+            type: "openBrowser",
+            url: a.destination
+        }) : window.location.assign(a.destination);
+    }
+    return {
+        RESPONSES: {
+            403: function() {
+                return a(document.body).hasClass("activity-page") ? void 0 : a(document.body).hasClass("iframe-view") && a(document.body).hasClass("logged-out") ? void window.open("/signup") : void c.signIn();
+            },
+            417: function() {
+                a.ajax("/utilities/unverified").done(function(b) {
+                    require([ "be/modal/simple" ], function(c) {
+                        var d = a("<div>").append(b.html), e = d.find(".popup-header").text();
+                        d.find(".popup-header, #popup-btn-wrap").remove(), c({
+                            title: e,
+                            html: d.html(),
+                            buttons: [ {
+                                label: "Close",
+                                classes: [ "form-button-default", "js-confirm" ]
+                            } ]
+                        });
+                    });
+                });
+            }
+        },
+        init: function() {
+            var b = this;
+            a(document).on({
+                ajaxSuccess: function(a, b) {
+                    var c = d(b);
+                    return c.destination ? e(c) : void 0;
+                },
+                ajaxError: function(c, e) {
+                    var f = b.RESPONSES[e.status];
+                    return a.isFunction(f) ? f(d(e)) : void 0;
+                }
+            });
+        }
+    };
+});
+if ("function" != typeof define) var define = require("amdefine")(module);
+
+define('nbd/event',[ "./util/extend", "./trait/pubsub" ], function(a, b) {
+    "use strict";
+    var c = a({}, b);
+    return c.bind = c.on, c.unbind = c.off, c.fire = c.trigger, c;
+});
+define('be/Controller/Dialog/Roulette',[ "jquery", "nbd/Controller/Responsive", "nbd/Promise" ], function(a, b, c) {
+    "use strict";
+    var d = b.extend({
+        $context: null,
+        setContext: function(a) {
+            this.$context && this.$context.off("click"), this.$context = a.on("click", function(a) {
+                a.isDefaultPrevented() || a.originalEvent.data === this._view || this.toggle(a.delegateTarget);
+            }.bind(this));
+        },
+        render: function(b) {
+            var c = a(b).closest(this._view.attachment), d = this._view.render(c.length ? c : document.body);
+            return this._view.position(b), d;
+        },
+        switchView: function() {
+            this._view && (this._view.destroy(), this._view = null), this._super.apply(this, arguments);
+        },
+        toggle: function(a) {
+            this._view.$view && this._view.$view.length ? (this._view.toggle(), this._view.position(a)) : c.from(this.render(a || this.$context)).then(this._view.show.bind(this._view));
+        }
+    });
+    return d;
+});
+define('lib/picturefill',[ "jquery" ], function(a) {
+    "use strict";
+    var b = window.matchMedia || window.msMatchMedia, c = function() {
+        var c = a(this), d = c.find("div[data-src]");
+        return d.length ? (b && (d = d.first().add(d.filter(function() {
+            var c = a(this).data("media");
+            return c && b(c).matches;
+        })).last()), c.attr("data-rendered", "rendered"), void a("<img>", {
+            alt: c.data("alt"),
+            src: d.data("src"),
+            "class": d.data("class"),
+            title: d.data("title"),
+            "data-pin-nopin": "pin"
+        }).appendTo(c)) : void c.find("img").remove();
+    };
+    return a.fn.picturefill = function() {
+        return this.find("div[data-picture]:not([data-rendered])").each(c), this;
+    };
+});
+define('lib/truncate',[],function() {
+    "use strict";
+    return function(a, b) {
+        if (a.length && document.createRange) {
+            var c, d = document.createRange();
+            if (d.getBoundingClientRect && (c = /[^\s]/.exec(a.textContent))) {
+                d.setStartBefore(a), d.setEnd(a, c.index + 1);
+                var e = d.getBoundingClientRect().height, f = e * (b + .5), g = a.length, h = g, i = -1;
+                if (d.setEndAfter(a), e = d.getBoundingClientRect().height, f > e) return void d.detach();
+                for (;h; ) h = ~~(h / 2), g += i * h, d.setEnd(a, g), e = d.getBoundingClientRect().height, 
+                i * (e - f) > 0 && (i = -i);
+                var j = a.textContent.substr(0, g);
+                j = j.replace(/\s+$/, "");
+                do a.textContent = j + "…", d.setEndAfter(a), e = d.getBoundingClientRect().height, 
+                j = j.substr(0, --g); while (e > f);
+                d.detach();
+            }
+        }
+    };
+});
+
+define("require/hgn!templates/notifications/appreciation", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"msg extra-padding\">");t.b("\n" + i);t.b("  <a href=\"");t.b(t.v(t.d("actor.url",c,p,0)));t.b("\" class=\"js-mini-profile\" data-id=\"");t.b(t.v(t.d("actor.id",c,p,0)));t.b("\">");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("</a> appreciated your project");t.b("\n" + i);t.b("</div>");t.b("\n" + i);t.b("<a href=\"");t.b(t.v(t.d("project.url",c,p,0)));t.b("\" class=\"graphic\">");t.b("\n" + i);t.b("  <div class=\"activity-block project-appreciated\">");t.b("\n" + i);t.b("    <div data-picture=\"\" data-alt=\"");t.b(t.v(t.d("project.name",c,p,0)));t.b("\">");t.b("\n" + i);t.b("    <div alt=\"");t.b(t.v(t.d("project.name",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("project.covers.115",c,p,0)));t.b("\" data-class=\"project_image\" data-title=\"");t.b(t.v(t.d("project.name",c,p,0)));t.b("\"></div>");t.b("\n" + i);t.b("    <div alt=\"");t.b(t.v(t.d("project.name",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("project.covers.202",c,p,0)));t.b("\" data-class=\"project_image project_image-2x\" data-title=\"");t.b(t.v(t.d("project.name",c,p,0)));t.b("\" data-media=\"(-webkit-min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("      (min--moz-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("      (-o-min-device-pixel-ratio: 4/3),");t.b("\n" + i);t.b("      (min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("      (min-resolution: 1.3dppx)\"></div>");t.b("\n" + i);t.b("    </div>");t.b("\n" + i);t.b("    <noscript><img alt=\"");t.b(t.v(t.d("project.name",c,p,0)));t.b("\" title=\"");t.b(t.v(t.d("project.name",c,p,0)));t.b("\" src=\"");t.b(t.v(t.d("project.covers.115",c,p,0)));t.b("\" class=\"project_image\" /></noscript>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</a>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/collection", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"msg\">");t.b("\n" + i);t.b("  <span class=\"js-mini-profile\" data-id=\"");t.b(t.v(t.d("actor.id",c,p,0)));t.b("\">");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("</span> followed your collection \"<a href=\"");t.b(t.v(t.d("collection.url",c,p,0)));t.b("\">");t.b(t.v(t.d("collection.title",c,p,0)));t.b("</a>\"");t.b("\n" + i);t.b("</div>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/comment", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<a href=\"");t.b(t.v(t.f("url",c,p,0)));t.b("#comments\" class=\"graphic\">");t.b("\n" + i);t.b("  <div data-picture=\"\" data-alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\">");t.b("\n" + i);t.b("    <div alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("covers.115",c,p,0)));t.b("\" data-class=\"comment-image\" data-title=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\"></div>");t.b("\n" + i);t.b("    <div alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("covers.202",c,p,0)));t.b("\" data-class=\"comment-image comment-image-2x\" data-title=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" data-media=\"(-webkit-min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("        (min--moz-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("        (-o-min-device-pixel-ratio: 4/3),");t.b("\n" + i);t.b("        (min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("        (min-resolution: 1.3dppx)\"></div>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("  <noscript><img alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" title=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" src=\"");t.b(t.v(t.d("covers.115",c,p,0)));t.b("\" class=\"comment-image\" /></noscript>");t.b("\n");t.b("\n" + i);t.b("  <div class=\"comment\">");t.b("\n" + i);t.b("    <strong class=\"actor js-mini-profile\" data-id=\"");t.b(t.v(t.d("actor.id",c,p,0)));t.b("\">");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b(":</strong> <span class=\"comment-text\">");t.b(t.v(t.d("comment.comment",c,p,0)));t.b("</span>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</a>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/wip_comment", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<a href=\"");t.b(t.v(t.f("url",c,p,0)));t.b("\" class=\"graphic\">");t.b("\n" + i);t.b("  <div data-picture=\"\" data-alt=\"");t.b(t.v(t.d("wip.title",c,p,0)));t.b("\">");t.b("\n" + i);t.b("    <div alt=\"");t.b(t.v(t.d("wip.title",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("revision.images.thumbnail_sm.url",c,p,0)));t.b("\" data-class=\"comment-image\" data-title=\"");t.b(t.v(t.d("wip.title",c,p,0)));t.b("\"></div>");t.b("\n" + i);t.b("    <div alt=\"");t.b(t.v(t.d("wip.title",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("revision.images.thumbnail.url",c,p,0)));t.b("\" data-class=\"comment-image comment-image-2x\" data-title=\"");t.b(t.v(t.d("wip.title",c,p,0)));t.b("\" data-media=\"(-webkit-min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("        (min--moz-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("        (-o-min-device-pixel-ratio: 4/3),");t.b("\n" + i);t.b("        (min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("        (min-resolution: 1.3dppx)\"></div>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("  <noscript><img alt=\"");t.b(t.v(t.d("wip.title",c,p,0)));t.b("\" title=\"");t.b(t.v(t.d("wip.title",c,p,0)));t.b("\" src=\"");t.b(t.v(t.d("revision.images.thumbnail_sm.url",c,p,0)));t.b("\" class=\"comment-image\" /></noscript>");t.b("\n");t.b("\n" + i);t.b("  <div class=\"comment wip-notification-comment\">");t.b("\n" + i);t.b("    <strong class=\"actor js-mini-profile\" data-id=\"");t.b(t.v(t.d("actor.id",c,p,0)));t.b("\">");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b(": </strong><span class=\"comment-text\">");t.b(t.v(t.d("comment.comment",c,p,0)));t.b("</span>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</a>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/comment_stub", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"graphic\">");t.b("\n" + i);t.b("  <div class=\"project-comment-wrap\">");t.b("\n" + i);t.b("    <div class=\"activity-block project-comment\">");t.b("\n" + i);if(t.s(t.f("project",c,p,1),c,p,0,126,138,"{{ }}")){t.rs(c,p,function(c,p,t){t.b(t.rp("<comment0",c,p,""));});c.pop();}if(t.s(t.f("revision",c,p,1),c,p,0,170,186,"{{ }}")){t.rs(c,p,function(c,p,t){t.b(t.rp("<wip_comment1",c,p,""));});c.pop();}t.b("    </div>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {"<comment0":{name:"comment", partials: {}, subs: {  }},"<wip_comment1":{name:"wip_comment", partials: {}, subs: {  }}}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/followed", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"msg\">");t.b("\n" + i);t.b("  <a href=\"");t.b(t.v(t.d("actor.url",c,p,0)));t.b("\" class=\"js-mini-profile\" data-id=\"");t.b(t.v(t.d("actor.id",c,p,0)));t.b("\">");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("</a> followed your work");t.b("\n" + i);t.b("</div>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/mention", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"msg extra-padding\">");t.b("\n" + i);t.b("  <a href=\"");t.b(t.v(t.d("actor.url",c,p,0)));t.b("\">");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("</a> mentioned you in a comment");t.b("\n" + i);t.b("</div>");t.b("\n" + i);t.b("<div class=\"graphic\">");t.b("\n" + i);t.b("  <div class=\"mention-wrap\">");t.b("\n" + i);t.b("    <div class=\"activity-block mention\">");t.b("\n" + i);if(t.s(t.f("project",c,p,1),c,p,0,229,241,"{{ }}")){t.rs(c,p,function(c,p,t){t.b(t.rp("<comment0",c,p,""));});c.pop();}if(t.s(t.f("revision",c,p,1),c,p,0,273,289,"{{ }}")){t.rs(c,p,function(c,p,t){t.b(t.rp("<wip_comment1",c,p,""));});c.pop();}t.b("    </div>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</div>");return t.fl(); },partials: {"<comment0":{name:"comment", partials: {}, subs: {  }},"<wip_comment1":{name:"wip_comment", partials: {}, subs: {  }}}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/saved", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"msg extra-padding\">");t.b("\n" + i);t.b("  <a href=\"");t.b(t.v(t.d("actor.url",c,p,0)));t.b("\" class=\"js-mini-profile\" data-id=\"");t.b(t.v(t.d("actor.id",c,p,0)));t.b("\">");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("</a> saved your project");t.b("\n" + i);t.b("</div>");t.b("\n" + i);t.b("<a href=\"");t.b(t.v(t.d("collection.url",c,p,0)));t.b("\" class=\"graphic\">");t.b("\n" + i);t.b("  <div class=\"activity-block project-collection\">");t.b("\n");t.b("\n" + i);if(t.s(t.d("collection.latest_projects",c,p,1),c,p,0,290,986,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("    <div class=\"collection-project-image-wrap\" data-picture=\"\" data-alt=\"");t.b(t.v(t.d("collection.title",c,p,0)));t.b("\">");t.b("\n" + i);t.b("    <div alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("covers.115",c,p,0)));t.b("\" data-class=\"collection-project-image\" data-title=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\"></div>");t.b("\n" + i);t.b("    <div alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("covers.202",c,p,0)));t.b("\" data-class=\"collection-project-image collection-project-image-2x\" data-title=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" data-media=\"(-webkit-min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("      (min--moz-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("      (-o-min-device-pixel-ratio: 4/3),");t.b("\n" + i);t.b("      (min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("      (min-resolution: 1.3dppx)\"></div>");t.b("\n" + i);t.b("    </div>");t.b("\n" + i);t.b("    <noscript><img alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" title=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" src=\"");t.b(t.v(t.d("covers.115",c,p,0)));t.b("\" class=\"collection-project-image\" /></noscript>");t.b("\n" + i);});c.pop();}t.b("    <div class=\"collection-title\">");t.b("\n" + i);t.b("      <span class=\"collection-title-text beicons-pre beicons-pre-collection\">");t.b(t.v(t.d("collection.title",c,p,0)));t.b("</span>");t.b("\n" + i);t.b("    </div>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</a>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/social", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"msg\">Your ");t.b(t.v(t.f("app",c,p,0)));t.b(" friend <a class=\"js-mini-profile\" data-id=\"");t.b(t.v(t.d("actor.id",c,p,0)));t.b("\" href=\"");t.b(t.v(t.d("actor.url",c,p,0)));t.b("\">");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("</a> joined Behance</div>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/_userProjects", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<a href=\"");t.b(t.v(t.f("url",c,p,0)));t.b("\" class=\"graphic\">");t.b("\n" + i);t.b("<div class=\"activity-block project-collection user-projects\">");t.b("\n" + i);if(t.s(t.f("latest_projects",c,p,1),c,p,0,119,791,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("  <div class=\"collection-project-image-wrap\" data-picture=\"\" data-alt=\"");t.b(t.v(t.f("display_name",c,p,0)));t.b("\">");t.b("\n" + i);t.b("  <div alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("covers.115",c,p,0)));t.b("\" data-class=\"collection-project-image\" data-title=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\"></div>");t.b("\n" + i);t.b("  <div alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("covers.202",c,p,0)));t.b("\" data-class=\"collection-project-image collection-project-image-2x\" data-title=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" data-media=\"(-webkit-min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("    (min--moz-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("    (-o-min-device-pixel-ratio: 4/3),");t.b("\n" + i);t.b("    (min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("    (min-resolution: 1.3dppx)\"></div>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("  <noscript><img alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" title=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" src=\"");t.b(t.v(t.d("covers.115",c,p,0)));t.b("\" class=\"collection-project-image\" /></noscript>");t.b("\n" + i);});c.pop();}t.b("</div>");t.b("\n" + i);t.b("</a>");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/shortlist", ["hogan", "require/hgn!templates/notifications/_userProjects"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"msg\">");t.b("\n" + i);t.b("  ");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b(" added <a href=\"");t.b(t.v(t.d("user.url",c,p,0)));t.b("\">");t.b(t.v(t.d("user.display_name",c,p,0)));t.b("</a> to your &ldquo;<a href=\"");t.b(t.v(t.d("job._links.recruiter",c,p,0)));t.b("\"</a>");t.b(t.v(t.d("job.title",c,p,0)));t.b("</a>&rdquo; shortlist");t.b("\n" + i);t.b("</div>");t.b("\n" + i);if(t.s(t.d("user.latest_projects.0",c,p,1),c,p,0,220,275,"{{ }}")){t.rs(c,p,function(c,p,t){if(t.s(t.f("user",c,p,1),c,p,0,230,265,"{{ }}")){t.rs(c,p,function(c,p,t){t.b(t.rp("<notifications/_userProjects0",c,p,""));});c.pop();}});c.pop();}return t.fl(); },partials: {"<notifications/_userProjects0":{name:"notifications/_userProjects", partials: {}, subs: {  }}}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = { "notifications/_userProjects": arguments[1].template, "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/discovered", ["hogan", "require/hgn!templates/notifications/_userProjects"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"msg\">");t.b("\n" + i);t.b("  ");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b(" added <a href=\"");t.b(t.v(t.d("user.url",c,p,0)));t.b("\">");t.b(t.v(t.d("user.display_name",c,p,0)));t.b("</a> to your &ldquo;<a href=\"");t.b(t.v(t.d("job._links.recruiter",c,p,0)));t.b("\"</a>");t.b(t.v(t.d("job.title",c,p,0)));t.b("</a>&rdquo; search");t.b("\n" + i);t.b("</div>");t.b("\n" + i);if(t.s(t.d("user.latest_projects.0",c,p,1),c,p,0,217,272,"{{ }}")){t.rs(c,p,function(c,p,t){if(t.s(t.f("user",c,p,1),c,p,0,227,262,"{{ }}")){t.rs(c,p,function(c,p,t){t.b(t.rp("<notifications/_userProjects0",c,p,""));});c.pop();}});c.pop();}return t.fl(); },partials: {"<notifications/_userProjects0":{name:"notifications/_userProjects", partials: {}, subs: {  }}}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = { "notifications/_userProjects": arguments[1].template, "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/jobshared", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("You were invited to join <a href=\"");t.b(t.v(t.d("actor.url",c,p,0)));t.b("\">");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("'s </a> search &ldquo;<a href=\"");t.b(t.v(t.d("job._links.recruiter",c,p,0)));t.b("\"</a>");t.b(t.v(t.d("job.title",c,p,0)));t.b("</a>&rdquo;");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/jobapplication", ["hogan", "require/hgn!templates/notifications/_userProjects"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"msg\">");t.b("\n" + i);t.b("  ");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b(" applied to your talent search &ldquo;<a href=\"");t.b(t.v(t.d("job._links.recruiter",c,p,0)));t.b("\"</a>");t.b(t.v(t.d("job.title",c,p,0)));t.b("</a>&rdquo;");t.b("\n" + i);t.b("</div>");t.b("\n" + i);if(t.s(t.d("actor.latest_projects.0",c,p,1),c,p,0,178,235,"{{ }}")){t.rs(c,p,function(c,p,t){if(t.s(t.f("actor",c,p,1),c,p,0,189,224,"{{ }}")){t.rs(c,p,function(c,p,t){t.b(t.rp("<notifications/_userProjects0",c,p,""));});c.pop();}});c.pop();}return t.fl(); },partials: {"<notifications/_userProjects0":{name:"notifications/_userProjects", partials: {}, subs: {  }}}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = { "notifications/_userProjects": arguments[1].template, "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/jobrecommendation", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"msg\">");t.b("\n" + i);t.b("  You have ");t.b(t.v(t.f("count",c,p,0)));t.b(" new recommendation");if(!t.s(t.f("single_count",c,p,1),c,p,1,0,0,"")){t.b("s");};t.b(" for &ldquo;<a href=\"");t.b(t.v(t.d("job._links.recruiter",c,p,0)));t.b("\"</a>");t.b(t.v(t.d("job.title",c,p,0)));t.b("</a>&rdquo;");t.b("\n" + i);t.b("</div>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/note", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b(" left a note on <a href=\"");t.b(t.v(t.d("user.url",c,p,0)));t.b("\">");t.b(t.v(t.d("user.display_name",c,p,0)));t.b("</a> in your &ldquo;<a href=\"");t.b(t.v(t.d("job._links.recruiter",c,p,0)));t.b("\">");t.b(t.v(t.d("job.title",c,p,0)));t.b("</a>&rdquo; search");t.b("\n" + i);t.b("<a class=\"note-wrap\" href=\"");t.b(t.v(t.d("job._links.recruiter",c,p,0)));t.b("\">");t.b("\n" + i);t.b("  <div class=\"activity-block note\">");t.b("\n" + i);t.b("    <div class=\"comment\">");t.b("\n" + i);t.b("      ");t.b(t.v(t.d("note.note_text",c,p,0)));t.b("\n" + i);t.b("    </div>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</a>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/jobarchived", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b(" <a href=\"");t.b(t.v(t.d("actor.url",c,p,0)));t.b("\">");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b(" </a> has archived the search  &ldquo;<a href=\"");t.b(t.v(t.d("job._links.recruiter",c,p,0)));t.b("\">");t.b(t.v(t.d("job.title",c,p,0)));t.b("</a>&rdquo; that was shared with you");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+define('be/trait/notificationPartial',[ "hgn!templates/notifications/appreciation", "hgn!templates/notifications/collection", "hgn!templates/notifications/comment", "hgn!templates/notifications/wip_comment", "hgn!templates/notifications/comment_stub", "hgn!templates/notifications/followed", "hgn!templates/notifications/mention", "hgn!templates/notifications/saved", "hgn!templates/notifications/social", "hgn!templates/notifications/shortlist", "hgn!templates/notifications/discovered", "hgn!templates/notifications/jobshared", "hgn!templates/notifications/jobapplication", "hgn!templates/notifications/jobrecommendation", "hgn!templates/notifications/note", "hgn!templates/notifications/jobarchived" ], function(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) {
+    "use strict";
+    var q = {
+        appreciate: a.template,
+        followcollection: b.template,
+        projectcomment: e.template,
+        wipcomment: e.template,
+        followuser: f.template,
+        projectaddedtocollection: h.template,
+        socialfriendjoined: i.template,
+        usermentionprojectcomment: g.template,
+        usermentionwiprevisioncomment: g.template,
+        addtoshortlist: j.template,
+        addtodiscovered: k.template,
+        jobshared: l.template,
+        jobapplicationcreated: m.template,
+        jobrecommendationsreceived: n.template,
+        notecreated: o.template,
+        jobarchived: p.template
+    };
+    return {
+        generatePartials: function(a) {
+            return {
+                innard: q[a.action_key],
+                comment: c.template,
+                wip_comment: d.template
+            };
+        }
+    };
+});
+
+define("require/hgn!templates/notification", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"notification-group");if(!t.s(t.f("read_on",c,p,1),c,p,1,0,0,"")){t.b(" unread");};t.b("\">");t.b("\n" + i);t.b("  <div class=\"notification-container\">");t.b("\n" + i);if(t.s(t.f("data",c,p,1),c,p,0,114,1202,"{{ }}")){t.rs(c,p,function(c,p,t){if(t.s(t.f("actor",c,p,1),c,p,0,129,963,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("    <a href=\"");t.b(t.v(t.d("actor.url",c,p,0)));t.b("\" class=\"avatar js-mini-profile\" data-id=\"");t.b(t.v(t.d("actor.id",c,p,0)));t.b("\">");t.b("\n" + i);t.b("      <div data-picture=\"\" data-alt=\"");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("\">");t.b("\n" + i);t.b("        <div alt=\"");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("actor.images.50",c,p,0)));t.b("\" data-class=\"avatar-image\" data-title=\"");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("\"></div>");t.b("\n" + i);t.b("        <div alt=\"");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("actor.images.115",c,p,0)));t.b("\" data-class=\"avatar-image avatar-image-2x\" data-title=\"");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("\" data-media=\"(-webkit-min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("          (min--moz-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("          (-o-min-device-pixel-ratio: 4/3),");t.b("\n" + i);t.b("          (min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("          (min-resolution: 1.3dppx)\"></div>");t.b("\n" + i);t.b("      </div>");t.b("\n" + i);t.b("      <noscript><img alt=\"");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("\" title=\"");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("\" src=\"");t.b(t.v(t.d("actor.images.50",c,p,0)));t.b("\" class=\"avatar-image\" /></noscript>");t.b("\n" + i);t.b("    </a>");t.b("\n" + i);});c.pop();}if(!t.s(t.f("actor",c,p,1),c,p,1,0,0,"")){t.b("      <img class=\"avatar\" src=\"");t.b(t.v(t.f("assetsurl",c,p,0)));t.b("/img/notifications/behance-icon.png\" />");t.b("\n" + i);};t.b("    <div class=\"detail beside-avatar\">");t.b("\n" + i);t.b(t.rp("<innard0",c,p,"      "));t.b("      <div class=\"time\">");t.b(t.v(t.f("time_ago",c,p,0)));t.b("</div>");t.b("\n" + i);t.b("    </div>");t.b("\n" + i);});c.pop();}t.b("  </div>");t.b("\n" + i);t.b("</div>");t.b("\n");return t.fl(); },partials: {"<innard0":{name:"innard", partials: {}, subs: {  }}}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+define('be/View/Notification',[ "page_config", "jquery", "moment", "nbd/View/Entity", "lib/picturefill", "lib/truncate", "be/trait/notificationPartial", "hgn!templates/notification" ], function(a, b, c, d, e, f, g, h) {
+    "use strict";
+    var i = d.extend({
+        template: function(a) {
+            return b(h(a, this.generatePartials(a)));
+        },
+        templateData: function() {
+            var b = this._super();
+            return b.time_ago = function() {
+                return c.unix(b.created_on).fromNow();
+            }, b.assetsurl = a.ASSETSURL, b;
+        },
+        rendered: function() {
+            this.$view.picturefill().find(".comment-text").contents().toArray().forEach(function(a) {
+                f(a, 4);
+            });
+        },
+        update: function() {
+            if (this.$view) {
+                var a = this.templateData().time_ago();
+                this.$view.removeClass("unread").find(".time").text(a);
+            }
+        }
+    }).mixin(g);
+    return i;
+});
+define('be/Controller/Notification',[ "nbd/Controller/Entity", "be/View/Notification" ], function(a, b) {
+    "use strict";
+    var c = a.extend({
+        update: function() {
+            this._view.update();
+        },
+        wasRead: function() {
+            return !!this._model.get("read_on");
+        }
+    }, {
+        VIEW_CLASS: b
+    });
+    return c;
+});
+
+define("require/hgn!templates/notificationGroup", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"notification-group");if(t.s(t.f("any_unread",c,p,1),c,p,0,45,52,"{{ }}")){t.rs(c,p,function(c,p,t){t.b(" unread");});c.pop();}t.b("\">");t.b("\n" + i);t.b("  <div class=\"js-context\"></div>");t.b("\n" + i);t.b("  <div class=\"js-more notification-group-more\">+ <span class=\"count\">0</span> More Updates</div>");t.b("\n" + i);t.b("</div>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+define('be/View/NotificationGroup',[ "jquery", "nbd/View/Entity", "nbd/util/async", "nbd/util/pipe", "hgn!templates/notificationGroup" ], function(a, b, c, d, e) {
+    "use strict";
+    var f = b.extend({
+        template: d(e, a),
+        templateData: function() {
+            var a = this._super();
+            return a.any_unread = this._model.get("entries").some(function(a) {
+                return !a.wasRead();
+            }), a;
+        },
+        draw: function(a) {
+            var b, d = this._model.get("entries");
+            d && d.length && (this._iterator = this._iterator || 0, d = d.slice(this._iterator, +a ? this._iterator += a : void 0), 
+            b = this.$view.find(".js-context"), d.forEach(function(a) {
+                a.render(b);
+            }), this._iterator || c(function() {
+                this._iterator = 0;
+            }.bind(this)));
+        },
+        markAsRead: function() {
+            this.$view.removeClass("unread");
+        },
+        rendered: function() {
+            this.draw(3);
+            var b = this._model.get("entries").length - (this._iterator || 0);
+            b ? this.$view.on("click", ".js-more", function() {
+                a(this).hide();
+            }).one("click", ".js-more", this.draw.bind(this)).find(".count").text(b) : this.$view.find(".js-more").hide();
+        }
+    });
+    return f;
+});
+define('be/Controller/NotificationGroup',[ "nbd/Controller/Entity", "be/View/NotificationGroup" ], function(a, b) {
+    "use strict";
+    var c = a.extend({
+        add: function(a) {
+            var b = this._model.get("entries") || [];
+            b.push(a), this._model.set("entries", b);
+        },
+        update: function() {
+            this._view.markAsRead(), this._forEachEntry(function(a) {
+                a.update();
+            });
+        },
+        _forEachEntry: function(a) {
+            var b = this._model.get("entries") || [];
+            b.forEach(function(b) {
+                a(b);
+            });
+        },
+        destroy: function() {
+            this._forEachEntry(function(a) {
+                a.destroy();
+            }), this._super();
+        }
+    }, {
+        VIEW_CLASS: b
+    });
+    return c;
+});
+
+define("require/hgn!templates/bell/section", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"activity-container js-");t.b(t.v(t.f("type",c,p,0)));t.b("-activity\">");t.b("\n" + i);t.b("  <h2 class=\"bell-title ");t.b(t.v(t.f("type",c,p,0)));t.b("-title hide-phone js-bell-title\">");t.b(t.v(t.f("title",c,p,0)));t.b("</h2>");t.b("\n" + i);t.b("  <h2 class=\"bell-title bell-title-dummy hide-phone js-bell-title-dummy\">");t.b(t.v(t.f("title",c,p,0)));t.b("</h2>");t.b("\n" + i);t.b("  <div class=\"js-error-container messages hide\">");t.b("\n" + i);t.b("    <div class=\"error\">");t.b("\n" + i);t.b("      <div class=\"icon\"></div>");t.b("\n" + i);t.b("      <span class=\"js-error-text\"></span>");t.b("\n" + i);t.b("    </div>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("  <div class=\"js-spin loading-spinner cfix\"></div>");t.b("\n" + i);t.b("</div>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notificationEmpty", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"notifications-empty\">You will receive notifications when people appreciate, comment on or collect your work.</div>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+define('be/View/Notifications',[ "jquery", "nbd/View/Entity", "nbd/util/pipe", "be/spinner", "hgn!templates/bell/section", "hgn!templates/notificationEmpty" ], function(a, b, c, d, e, f) {
+    "use strict";
+    var g = b.extend({
+        template: c(e, a),
+        templateData: function() {
+            return {
+                title: "Your Notifications",
+                type: "notification"
+            };
+        },
+        rendered: function() {
+            this.$loading = d.init(this.$view), this.$loading.hide(), this.listenTo(this._model, "entries", this.draw), 
+            this.draw(this._model.get("entries"));
+        },
+        draw: function(a) {
+            a && (a.forEach(function(a) {
+                a.render(this.$view);
+            }.bind(this)), this.empty(!a.length));
+        },
+        empty: function(b) {
+            var c = !b;
+            this.$empty = this.$empty || a(f()), c ? this.$empty.remove() : this.$view.append(this.$empty);
+        }
+    });
+    return g;
+});
+define('be/Controller/Notifications',[ "nbd/trait/pubsub", "nbd/Controller/Entity", "nbd/util/async", "be/xhr", "be/Controller/Notification", "be/Controller/NotificationGroup", "be/View/Notifications" ], function(a, b, c, d, e, f, g) {
+    "use strict";
+    var h, i = "/v2/notifications?action_set=bell-note-v1";
+    return h = b.extend({
+        refresh: function() {
+            return this._model.get("entries") ? void (this.block || this.get()) : this.more();
+        },
+        get: function j() {
+            var a = j.bind(this), b = this._model, d = this.read({
+                onset_ts: b.get("onset")
+            }).then(function(d) {
+                if (!d.notifications) throw d;
+                return b.set("onset", d.latest_ts), d.has_more && c(a), d.notifications;
+            }).then(this.constructor.makeEntries);
+            return d.then(function(a) {
+                var c = b.get("entries") || [];
+                b.set("entries", a.concat(c));
+            }).then(this.trigger.bind(this, "sync")), d;
+        },
+        more: function k() {
+            if (!k.block) {
+                k.block = !0;
+                var a = this._model, b = this.read({
+                    offset_ts: a.get("offset")
+                }).then(function(b) {
+                    if (!b.notifications) throw b;
+                    k.block = !b.has_more;
+                    var c = a.data();
+                    return c.onset = c.onset || b.latest_ts, c.offset = b.earliest_ts, b.notifications;
+                }).then(this.constructor.makeEntries);
+                return b.then(function(b) {
+                    var c = a.get("entries") || [];
+                    a.set("entries", c.concat(b));
+                }).then(this.trigger.bind(this, "sync")), b;
+            }
+        },
+        read: function(a) {
+            try {
+                this._view.$loading.show();
+            } catch (b) {}
+            var c = function() {
+                this._view.$loading.hide();
+            }.bind(this), e = d({
+                url: i,
+                type: "get",
+                data: a
+            });
+            return e.then(c, c), e;
+        },
+        update: function() {
+            var a = this._model.get("entries");
+            a && a.length && a.forEach(function(a) {
+                a.update();
+            });
+        },
+        clear: function() {
+            d({
+                url: i,
+                type: "delete"
+            });
+        }
+    }, {
+        VIEW_CLASS: g,
+        makeEntries: function(a) {
+            var b, c, d, g = [], h = 0, i = 2;
+            for (c = 0; c < a.length; ++c) if (a[c + 1] && a[c + 1].action_key === a[c].action_key) h++; else {
+                if (h >= i) {
+                    for (b = new f(), d = c - h; c >= d; ++d) b.add(new e(a[d]));
+                    g.push(b);
+                } else for (d = c - h; c >= d; ++d) g.push(new e(a[d]));
+                h = 0;
+            }
+            return g;
+        }
+    }).mixin(a);
+});
+define('be/trait/eventMappable',[],function() {
+    "use strict";
+    function a(a, b, c) {
+        var d = [], e = a[b], f = function(a) {
+            var b = [];
+            return "string" == typeof a ? b.push({
+                method: c[a].bind(c)
+            }) : "function" == typeof a ? b.push({
+                method: a
+            }) : Object.keys(a).forEach(function(c) {
+                var d = f(a[c]);
+                b.push({
+                    selector: c,
+                    method: d[0].method
+                });
+            }), b;
+        };
+        return Array.isArray(e) ? e.forEach(function(a) {
+            d.push.apply(d, f(a));
+        }) : d.push.apply(d, f(e)), d;
+    }
+    var b = {
+        _mapEvents: function() {
+            var b = this;
+            this._undelegateEvents(), Object.keys(this.events).forEach(function(c) {
+                var d = a(b.events, c, b);
+                c += ".delegated", d.forEach(function(a) {
+                    a.selector ? b.$view.on(c, a.selector, a.method) : b.$view.on(c, a.method);
+                });
+            });
+        },
+        _undelegateEvents: function() {
+            this.$view.off(".delegated");
+        }
+    };
+    return b;
+});
+
+define("require/hgn!templates/notifications/proposition", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"proposition-group cfix\">");t.b("\n" + i);t.b("  <div class=\"js-invitation\">");t.b("\n");t.b("\n" + i);t.b("    <a href=\"");t.b(t.v(t.d("actor.url",c,p,0)));t.b("\" class=\"avatar js-mini-profile\" data-id=\"");t.b(t.v(t.d("actor.id",c,p,0)));t.b("\">");t.b("\n" + i);t.b("      <div data-picture=\"\" data-alt=\"");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("\">");t.b("\n" + i);t.b("        <div alt=\"");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("actor.images.50",c,p,0)));t.b("\" data-class=\"avatar-image\" data-title=\"");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("\"></div>");t.b("\n" + i);t.b("        <div alt=\"");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("actor.images.115",c,p,0)));t.b("\" data-class=\"avatar-image avatar-image-2x\" data-title=\"");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("\" data-media=\"(-webkit-min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("          (min--moz-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("          (-o-min-device-pixel-ratio: 4/3),");t.b("\n" + i);t.b("          (min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("          (min-resolution: 1.3dppx)\"></div>");t.b("\n" + i);t.b("      </div>");t.b("\n" + i);t.b("      <noscript><img alt=\"");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("\" title=\"");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("\" src=\"");t.b(t.v(t.d("actor.images.50",c,p,0)));t.b("\" class=\"avatar-image\" /></noscript>");t.b("\n" + i);t.b("    </a>");t.b("\n");t.b("\n" + i);t.b("    <div class=\"detail beside-avatar\">");t.b("\n" + i);t.b("      <div class=\"msg extra-padding\">");t.b("\n" + i);t.b(t.rp("<subject0",c,p,"        "));t.b("      </div>");t.b("\n");t.b("\n" + i);t.b("      <div class=\"graphic\">");t.b("\n" + i);t.b("        <div class=\"activity-block proposition-");t.b(t.v(t.f("proposition",c,p,0)));t.b(" cfix\">");t.b("\n" + i);t.b(t.rp("<innards1",c,p,"          "));t.b("\n" + i);t.b("          <button class=\"accept right js-accept form-button form-button-small form-button-default\">Accept</button>");t.b("\n" + i);t.b("        </div>");t.b("\n" + i);t.b("      </div>");t.b("\n");t.b("\n" + i);t.b("      <div class=\"time\">");t.b("\n" + i);t.b("        <span class=\"proposition-time js-time\">");t.b(t.v(t.f("time_ago",c,p,0)));t.b("</span>");t.b("\n" + i);t.b("        <span class=\"js-reject proposition-reject\">Decline invitation</span>");t.b("\n" + i);t.b("      </div>");t.b("\n");t.b("\n" + i);t.b("    </div>");t.b("\n");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</div>");t.b("\n");return t.fl(); },partials: {"<subject0":{name:"subject", partials: {}, subs: {  }},"<innards1":{name:"innards", partials: {}, subs: {  }}}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/propositions/collection", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");if(t.s(t.f("collection",c,p,1),c,p,0,15,773,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("  <a href=\"");t.b(t.v(t.f("url",c,p,0)));t.b("\">");t.b("\n" + i);t.b("    <div data-picture=\"\" data-alt=\"");t.b(t.v(t.f("title",c,p,0)));t.b("\">");t.b("\n" + i);t.b("      <div alt=\"");t.b(t.v(t.f("title",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("latest_projects.0.covers.115",c,p,0)));t.b("\" data-class=\"comment-image\" data-title=\"");t.b(t.v(t.f("title",c,p,0)));t.b("\"></div>");t.b("\n" + i);t.b("      <div alt=\"");t.b(t.v(t.f("title",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("latest_projects.0.covers.202",c,p,0)));t.b("\" data-class=\"comment-image comment-image-2x\" data-title=\"");t.b(t.v(t.f("title",c,p,0)));t.b("\" data-media=\"(-webkit-min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("          (min--moz-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("          (-o-min-device-pixel-ratio: 4/3),");t.b("\n" + i);t.b("          (min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("          (min-resolution: 1.3dppx)\"></div>");t.b("\n" + i);t.b("    </div>");t.b("\n" + i);t.b("    <noscript><img alt=\"");t.b(t.v(t.f("title",c,p,0)));t.b("\" title=\"");t.b(t.v(t.f("title",c,p,0)));t.b("\" src=\"");t.b(t.v(t.d("latest_projects.0.covers.115",c,p,0)));t.b("\" class=\"comment-image\" /></noscript>");t.b("\n" + i);t.b("  </a>");t.b("\n" + i);t.b("  <div class=\"proposition-subject\">");t.b(t.v(t.f("title",c,p,0)));t.b("</div>");t.b("\n" + i);});c.pop();}return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/propositions/project", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");if(t.s(t.f("project",c,p,1),c,p,0,12,724,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("  <a href=\"");t.b(t.v(t.f("url",c,p,0)));t.b("\">");t.b("\n" + i);t.b("    <div data-picture=\"\" data-alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\">");t.b("\n" + i);t.b("      <div alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("covers.115",c,p,0)));t.b("\" data-class=\"proposition-image\" data-title=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\"></div>");t.b("\n" + i);t.b("      <div alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("covers.202",c,p,0)));t.b("\" data-class=\"proposition-image proposition-image-2x\" data-title=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" data-media=\"(-webkit-min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("          (min--moz-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("          (-o-min-device-pixel-ratio: 4/3),");t.b("\n" + i);t.b("          (min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("          (min-resolution: 1.3dppx)\"></div>");t.b("\n" + i);t.b("    </div>");t.b("\n" + i);t.b("    <noscript><img alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" title=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" src=\"");t.b(t.v(t.d("covers.115",c,p,0)));t.b("\" class=\"proposition-image\" /></noscript>");t.b("\n" + i);t.b("  </a>");t.b("\n" + i);t.b("  <div class=\"proposition-subject\">");t.b(t.v(t.f("name",c,p,0)));t.b("</div>");t.b("\n" + i);});c.pop();}return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/propositions/team", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");if(t.s(t.f("team",c,p,1),c,p,0,9,703,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("  <a href=\"");t.b(t.v(t.f("url",c,p,0)));t.b("\">");t.b("\n" + i);t.b("    <div data-picture=\"\" data-alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\">");t.b("\n" + i);t.b("      <div alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("images.138",c,p,0)));t.b("\" data-class=\"comment-image\" data-title=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\"></div>");t.b("\n" + i);t.b("      <div alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" data-src=\"");t.b(t.v(t.d("images.276",c,p,0)));t.b("\" data-class=\"comment-image comment-image-2x\" data-title=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" data-media=\"(-webkit-min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("          (min--moz-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("          (-o-min-device-pixel-ratio: 4/3),");t.b("\n" + i);t.b("          (min-device-pixel-ratio: 1.3),");t.b("\n" + i);t.b("          (min-resolution: 1.3dppx)\"></div>");t.b("\n" + i);t.b("    </div>");t.b("\n" + i);t.b("    <noscript><img alt=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" title=\"");t.b(t.v(t.f("name",c,p,0)));t.b("\" src=\"");t.b(t.v(t.d("images.138",c,p,0)));t.b("\" class=\"comment-image\" /></noscript>");t.b("\n" + i);t.b("  </a>");t.b("\n" + i);t.b("<div class=\"proposition-subject\">");t.b(t.v(t.f("name",c,p,0)));t.b("</div>");t.b("\n" + i);});c.pop();}return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/propositions/subjects/text", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<a href=\"");t.b(t.v(t.d("actor.url",c,p,0)));t.b("\" class=\"js-mini-profile\" data-id=\"");t.b(t.v(t.d("actor.id",c,p,0)));t.b("\">");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("</a> ");t.b(t.v(t.f("action",c,p,0)));t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/notifications/propositions/subjects/team", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<a href=\"");t.b(t.v(t.d("actor.url",c,p,0)));t.b("\" class=\"js-mini-profile\" data-id=\"");t.b(t.v(t.d("actor.id",c,p,0)));t.b("\">");t.b(t.v(t.d("actor.display_name",c,p,0)));t.b("</a> ");t.b(t.v(t.f("action",c,p,0)));t.b(" ");if(t.s(t.f("team",c,p,1),c,p,0,118,148,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("<a href=\"");t.b(t.v(t.f("url",c,p,0)));t.b("\">");t.b(t.v(t.f("name",c,p,0)));t.b("</a>");});c.pop();}t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+define('be/View/Proposition',[ "jquery", "moment", "nbd/View/Entity", "nbd/trait/promise", "nbd/util/extend", "lib/picturefill", "be/trait/eventMappable", "hgn!templates/notifications/proposition", "hgn!templates/notifications/propositions/collection", "hgn!templates/notifications/propositions/project", "hgn!templates/notifications/propositions/team", "hgn!templates/notifications/propositions/subjects/text", "hgn!templates/notifications/propositions/subjects/team" ], function(a, b, c, d, e, f, g, h, i, j, k, l, m) {
+    "use strict";
+    var n, o = "Invitation declined", p = 250, q = 1e3, r = {
+        project_owner: {
+            innards: j.template,
+            subject: l.template
+        },
+        collection_owner: {
+            innards: i.template,
+            subject: l.template
+        },
+        member_to_team: {
+            innards: k.template,
+            subject: m.template
+        },
+        team_to_member: {
+            innards: k.template,
+            subject: m.template
+        },
+        project_to_team: {
+            innards: j.template,
+            subject: m.template
+        }
+    }, s = {
+        project_owner: "invited you to co-own a Project",
+        collection_owner: "invited you to co-own a Collection",
+        member_to_team: "requested to join",
+        team_to_member: "invited you to join",
+        project_to_team: "requested to add a project to"
+    };
+    return n = c.extend({
+        events: {
+            click: {
+                ".js-accept": "_acceptInvitation",
+                ".js-reject": "_rejectInvitation"
+            }
+        },
+        template: function(b) {
+            return a(h(b, r[b.type]));
+        },
+        templateData: function() {
+            var a = this._super();
+            return e({
+                action: s[a.type],
+                actor: a.other_user,
+                proposition: "project",
+                time_ago: function() {
+                    return b.unix(a.created_on).fromNow();
+                }
+            }, a);
+        },
+        rendered: function() {
+            this.$rejectBtn = this.$view.find(".js-reject"), this.$time = this.$view.find(".js-time"), 
+            this.$view.picturefill(), this._mapEvents();
+        },
+        update: function() {
+            if (this.$view) {
+                var a = this.templateData().time_ago;
+                this.$time.text(a);
+            }
+        },
+        acceptAndFade: function() {
+            var a = new d();
+            return this.$view.fadeOut(p, a.resolve), a;
+        },
+        declineAndFade: function() {
+            var a = new d();
+            return this.$rejectBtn.text(o), this.$view.delay(q).fadeOut(p, a.resolve), a;
+        },
+        _acceptInvitation: function() {
+            this._controller.accept();
+        },
+        _rejectInvitation: function() {
+            this._controller.reject();
+        }
+    }).mixin(g);
+});
+define('be/Controller/Proposition',[ "nbd/Controller/Entity", "nbd/trait/pubsub", "be/xhr", "be/View/Proposition" ], function(a, b, c, d) {
+    "use strict";
+    var e, f = "/v2/notifications/invitations/";
+    return e = a.extend({
+        update: function() {
+            this._view.update();
+        },
+        accept: function() {
+            c({
+                url: f + this._model.get("id"),
+                type: "put"
+            }).then(this._view.acceptAndFade.bind(this._view)).then(this._remove.bind(this)).then(null, this.trigger.bind(this, "error"));
+        },
+        reject: function() {
+            c({
+                url: f + this._model.get("id"),
+                type: "delete"
+            }).then(this._view.declineAndFade.bind(this._view)).then(this._remove.bind(this));
+        },
+        _remove: function() {
+            this.trigger("resolve", this._model.get("id")), this.destroy();
+        }
+    }, {
+        VIEW_CLASS: d
+    }).mixin(b);
+});
+define('be/View/Propositions',[ "jquery", "nbd/View/Entity", "nbd/util/pipe", "be/spinner", "hgn!templates/bell/section" ], function(a, b, c, d, e) {
+    "use strict";
+    var f = b.extend({
+        template: c(e, a),
+        templateData: function() {
+            return {
+                title: "Your Requests",
+                type: "propositions"
+            };
+        },
+        rendered: function() {
+            this.$errorContainer = this.$view.find(".js-error-container"), this.$loading = d.init(this.$view), 
+            this.$errorContainer.addClass("hide"), this.$loading.hide(), this.listenTo(this._model, "entries", this._draw), 
+            this._draw(this._model.get("entries"));
+        },
+        update: function() {
+            this.$errorContainer.addClass("hide");
+        },
+        showErrorMessages: function(a) {
+            var b = a.messages.reduce(function(a, b) {
+                return a + "\n" + b.message;
+            }, "");
+            this.$errorContainer.find(".js-error-text").text(b).end().removeClass("hide");
+        },
+        _draw: function(a) {
+            var b = this._model.get("order");
+            return a && Object.keys(a).length ? (this.$view.removeClass("hide"), void b.forEach(function(b) {
+                var c = a[b];
+                c && c.render(this.$view);
+            }.bind(this))) : void this.$view.addClass("hide");
+        }
+    });
+    return f;
+});
+define('be/Controller/Propositions',[ "nbd/trait/pubsub", "nbd/Controller/Entity", "be/xhr", "be/Controller/Proposition", "be/View/Propositions" ], function(a, b, c, d, e) {
+    "use strict";
+    var f, g = "/v2/notifications/invitations";
+    return f = b.extend({
+        more: function h() {
+            if (!h.block) {
+                h.block = !0;
+                var a = this, b = this._model, c = this.read();
+                return c.then(function(a) {
+                    if (!a.invitations) throw a;
+                    return a.invitations;
+                }).then(function(b) {
+                    var c = b.map(function(a) {
+                        return new d(a);
+                    });
+                    return c.forEach(function(b) {
+                        a.listenTo(b, "resolve", a._updateEntries).listenTo(b, "error", a._displayErrors);
+                    }), c;
+                }).then(function(a) {
+                    var c = b.get("entries") || {}, d = b.get("order") || [], e = a.reduce(function(a, b) {
+                        var c = b._model.get("id");
+                        return a[c] = b, d.push(c), a;
+                    }, c);
+                    return b.set("order", d), b.set("entries", e), Object.keys(e).length;
+                }).then(this.trigger.bind(this, "sync")), c;
+            }
+        },
+        count: function() {
+            var a = this._model.get("entries");
+            return a ? Object.keys(a).length : 0;
+        },
+        read: function() {
+            try {
+                this._view.$loading.show();
+            } catch (a) {}
+            var b = function() {
+                this._view.$loading.hide();
+            }.bind(this), d = c({
+                url: g
+            });
+            return d.then(b, b), d;
+        },
+        update: function() {
+            var a = this._model.get("entries");
+            this._view.update(), a && Object.keys(a).length && Object.keys(a).forEach(function(b) {
+                var c = a[b];
+                c && c.update();
+            }.bind(this));
+        },
+        _updateEntries: function(a) {
+            var b = this._model.get("entries") || {}, c = this._model.get("order") || [];
+            b[a] && (delete b[a], c.splice(c.indexOf(a), 1)), this._model.set("entries", b), 
+            this._model.set("order", c), this.trigger("removed");
+        },
+        _displayErrors: function(a) {
+            a && a.responseJSON && (a = a.responseJSON), this._view.showErrorMessages(a);
+        }
+    }, {
+        VIEW_CLASS: e
+    }).mixin(a);
+});
+define('lib/infinitescroll',[ "jquery", "log" ], function(a, b) {
+    "use strict";
+    function c(a) {
+        a();
+    }
+    function d(a) {
+        var b, c;
+        return a.is(g) ? (b = window.innerHeight || g.height(), c = h.height() - b - g.scrollTop()) : (b = a.prop("clientHeight"), 
+        c = a.prop("scrollHeight") - b - a.scrollTop()), c / b;
+    }
+    function e(b) {
+        var e = "window" === b ? g : a(b);
+        return function() {
+            var a, f = d(e);
+            for (a in j[b]) f <= Number(a) && j[b][a].wrapped.forEach(c);
+        };
+    }
+    function f(c, d, f) {
+        function h() {
+            if (!h.blocking) {
+                h.blocking = !0;
+                var a = d.apply(null, arguments);
+                a && "function" == typeof a.then ? a.then(function() {
+                    h.blocking = !1, i[f]();
+                }, function(a) {
+                    a instanceof Error && b.warn(a);
+                }) : h.blocking = !1;
+            }
+        }
+        "function" == typeof c && (f = d, d = c, c = 1), f = f || "window", c = Number(c).toString();
+        var k, l = "window" === f ? g : a(f);
+        j[f] || (j[f] = {}, i[f] = e(f), l.on("scroll", i[f])), k = j[f][c], k || (k = j[f][c] = {
+            wrapped: [],
+            original: []
+        }), k.original.push(d), k.wrapped.push(h), i[f]();
+    }
+    var g = a(window), h = a(document), i = {}, j = {};
+    return f.remove = function(b, c) {
+        c = c || "window";
+        var d, e, f, h = "window" === c ? g : a(c);
+        for (d in j[c]) e = j[c][d], f = e.original.indexOf(b), ~f && (e.original.splice(f, 1), 
+        e.wrapped.splice(f, 1), e.original.length || delete j[c][d]);
+        Object.keys(j[c]).length || (h.off("scroll", i[c]), delete j[c]);
+    }, f.check = function(a) {
+        a = a || "window", i[a]();
+    }, f;
+});
+
+define("require/hgn!templates/bell/dialog", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"activity-container-wrap\">");t.b("\n" + i);t.b("  <div class=\"bell-section propositions-section js-propositions\"></div>");t.b("\n" + i);t.b("  <div class=\"bell-section notifications-section js-notifications\"></div>");t.b("\n" + i);t.b("</div>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+define('be/trait/bell',[ "jquery", "nbd/util/pipe", "lib/infinitescroll", "be/spinner", "hgn!templates/html", "hgn!templates/bell/dialog" ], function(a, b, c, d, e, f) {
+    "use strict";
+    var g = 0;
+    return {
+        mustache: e,
+        selector: ".js-notifications-nav-menu .popup-content .activity-container-wrap",
+        templateData: function() {
+            return {
+                title: "Notifications",
+                classes: [ "notifications", "timeline-container", "js-notifications-nav-menu" ],
+                html: f
+            };
+        },
+        rendered: function() {
+            this._super(), this._bindScroll(), this._bindInfiniteScroll();
+        },
+        renderNotifications: function(a) {
+            this.$notifications || (this.$notifications = this.$view.find(".js-notifications"), 
+            a.render(this.$notifications));
+        },
+        renderPropositions: function(a) {
+            this.$propositions || (this.$propositions = this.$view.find(".js-propositions"), 
+            a.render(this.$propositions));
+        },
+        _bindInfiniteScroll: function() {
+            c(.5, function() {
+                this._controller.more();
+            }.bind(this), this.selector);
+        },
+        _bindScroll: function() {
+            this.$view.find(this.selector).on("scroll", function() {
+                this.$headers = this.$headers || this.$view.find(".js-bell-title").toArray();
+                var b = this.$headers.map(function(b) {
+                    var c = a(b), d = c.position();
+                    return c.is(".sticky") && (d = c.siblings(".js-bell-title-dummy").position()), {
+                        $el: c,
+                        offsetTop: d.top
+                    };
+                }.bind(this)).filter(function(a) {
+                    return a.$el.is(":visible");
+                }).reduce(function(a, b) {
+                    var c;
+                    return a ? c = b.offsetTop > g ? a : b.offsetTop > a.offsetTop ? b : a : b;
+                });
+                b.$el.is(".js-bell-title-dummy") || (this.$currentHeader && this.$currentHeader.length && this.$currentHeader.removeClass("sticky"), 
+                b.$el.addClass("sticky"), this.$currentHeader = b.$el);
+            }.bind(this));
+        }
+    };
+});
+define('be/View/Dialog/Layover/Bell',[ "be/View/Dialog/Layover", "be/trait/bell" ], function(a, b) {
+    "use strict";
+    var c = a.extend(b);
+    return c;
+});
+define('be/View/Dialog/Menu',[ "jquery", "be/View/Dialog", "nbd/util/async", "jquery/ui/position" ], function(a, b, c) {
+    "use strict";
+    var d = b.extend({
+        init: function() {
+            this._super.apply(this, arguments), this.dismiss = function(a) {
+                a.originalEvent.data !== this && (this.hide(), a.preventDefault());
+            }.bind(this);
+        },
+        destroy: function() {
+            this._unbind(), this._super.apply(this, arguments);
+        },
+        template: function(b) {
+            return this._super(a.extend({
+                dialogType: "menu",
+                blocking: !1,
+                hide_toolbar: !0
+            }, b));
+        },
+        rendered: function() {
+            this._super();
+            var a = this;
+            this.$view.on("click touchend", function(b) {
+                b.originalEvent = b.originalEvent || {}, b.originalEvent.data = a;
+            });
+        },
+        _bind: function() {
+            a("html").on("click touchend", this.dismiss);
+        },
+        _unbind: function() {
+            a("html").off("click touchend", this.dismiss);
+        },
+        position: function(b, c) {
+            if (this.$view) {
+                b && (this._lastContext = b);
+                var d = {
+                    my: "left top",
+                    at: "left bottom+10",
+                    of: this._lastContext,
+                    collision: "flipfit"
+                };
+                this.$view.position(a.extend(d, c));
+            }
+        },
+        show: function() {
+            return this.$view ? (c(this._bind.bind(this)), this.$view.addClass("shown"), this._super()) : void 0;
+        },
+        hide: function() {
+            return this.$view ? (this._unbind(), this.$view.removeClass("shown"), this._super()) : void 0;
+        },
+        toggle: function() {
+            return this[this.$view.hasClass("shown") ? "hide" : "show"]();
+        }
+    });
+    return d;
+});
+define('be/View/Dialog/Menu/BaseView',[ "be/View/Dialog/Menu" ], function(a) {
+    "use strict";
+    var b = "107", c = "10", d = "5";
+    return a.extend({
+        init: function() {
+            this._super.apply(this, arguments), this.dismiss = function(a) {
+                a.originalEvent.data !== this && this.hide();
+            }.bind(this);
+        },
+        position: function(a) {
+            return this._super(a, {
+                my: "left-" + b + " top-" + c,
+                at: "center bottom+" + d,
+                collision: "none"
+            });
+        }
+    });
+});
+define('be/View/Dialog/Menu/Bell',[ "be/View/Dialog/Menu/BaseView", "be/trait/bell" ], function(a, b) {
+    "use strict";
+    return a.extend(b);
+});
+define('be/Controller/Dialog/Bell',[ "nbd/trait/pubsub", "nbd/Promise", "be/Controller/Dialog/Roulette", "be/Controller/Notifications", "be/Controller/Propositions", "be/View/Dialog/Layover/Bell", "be/View/Dialog/Menu/Bell" ], function(a, b, c, d, e, f, g) {
+    "use strict";
+    var h = c.extend({
+        init: function() {
+            this._notifications = new d(), this.listenTo(this._notifications, "sync", this._syncCount), 
+            this._super.apply(this, arguments);
+        },
+        _initView: function() {
+            this._super.apply(this, arguments), this.listenTo(this._view, "show", this.renderSections).listenTo(this._view, "show", this.updateSections).listenTo(this._view, "hide", function() {
+                this._notifications.clear();
+            });
+        },
+        renderSections: function() {
+            this._view.renderNotifications(this._notifications);
+        },
+        updateSections: function() {
+            this._notifications.update();
+        },
+        _syncCount: function() {
+            this.trigger("sync", this._count);
+        },
+        more: function() {
+            return this._notifications.more();
+        }
+    }, {
+        VIEW_CLASS: {
+            phone: f,
+            tablet: g,
+            desktop: g
+        }
+    }).mixin(a), i = h.extend({
+        _count: 0,
+        init: function() {
+            this._propositions = new e(), this.listenTo(this._propositions, "sync", function(a) {
+                this._count += a, this._syncCount();
+            }).listenTo(this._propositions, "removed", function() {
+                this._count = Math.max(this._count - 1, 0), this._syncCount();
+            }), this._super.apply(this, arguments);
+        },
+        renderSections: function() {
+            this._super(), this._view.renderPropositions(this._propositions);
+        },
+        updateSections: function() {
+            this._super(), this._propositions.update();
+        },
+        more: function() {
+            return b.all([ this._super(), this._propositions.more() ]);
+        }
+    });
+    return i;
+});
+define('be/bell',[ "jquery", "has", "be/xhr", "be/Controller/Dialog/Bell" ], function(a, b, c, d) {
+    "use strict";
+    var e, f = "/v2/notifications/count", g = "bell-count-v1";
+    return e = {
+        init: function(c) {
+            var e = a(".js-bell-menu", c);
+            e.length && (this.$bell = e, this._actionSet = g, this._dialog = new d(), this._dialog.setContext(e), 
+            this._dialog.on("sync", function(a) {
+                this.update(a || 0);
+            }, this), b("localstorage") && this.update(window.sessionStorage.getItem("notifications") || 0), 
+            this._sync());
+        },
+        destroy: function() {
+            this._dialog && this._dialog.destroy(), clearInterval(this._interval);
+        },
+        update: function(a) {
+            var b = 0 === +a;
+            this.$bell.toggleClass("unread", !b).find(".notifications-count").text(a), this._dialog.block = b;
+        },
+        _sync: function() {
+            return c({
+                url: f,
+                type: "get",
+                data: {
+                    action_set: this._actionSet
+                }
+            }).then(function(a) {
+                return b("localstorage") && window.sessionStorage.setItem("notifications", a.count), 
+                a.count;
+            }).then(e.update.bind(e));
+        }
+    };
+});
+define('be/modal/simple',[ "be/Modal" ], function(a) {
+    "use strict";
+    return a.simple;
+});
+define('inbox/lib/byLine',[],function() {
+    "use strict";
+    function a(a, b) {
+        return a.length < 3 ? a.join(b) : a[0] + b + (a.length - 1) + " others";
+    }
+    return a;
+});
+define('inbox/Model/Message',[ "moment", "nbd/Model", "nbd/util/extend", "inbox/lib/byLine" ], function(a, b, c, d) {
+    "use strict";
+    function e(a) {
+        var b = [];
+        return a && (b = a.map(function(a) {
+            return {
+                image: a.images && a.images[g] || "",
+                name: a.display_name,
+                url: a.url,
+                id: a.id
+            };
+        })), b;
+    }
+    var f, g = 115;
+    return f = b.extend({
+        init: function(a) {
+            this._super(this.transform(a));
+        },
+        transform: function(b) {
+            var f = e(b.recipients), g = +b.unread_count || 0, h = a.unix(b.last_message_on), i = a().diff(h, "hours");
+            return c(b, {
+                byLine: d(f.map(function(a) {
+                    return a.name;
+                }), " and "),
+                message: b.last_message_part,
+                recipients: f,
+                unread: !!g,
+                unreadCount: g,
+                timestamp: i > 23 ? h.format("MMMM DD, YYYY") : h.fromNow()
+            });
+        }
+    });
+});
+
+define("require/hgn!templates/inbox/dialog/main", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"bell-section activity-container-wrap\">");t.b("\n" + i);t.b("  <h2 class=\"bell-title notifications-title hide-phone sticky\">");t.b("\n" + i);t.b("    Your Messages");t.b("\n" + i);t.b("    <span class=\"js-inbox-chrome bell-inbox-controls\">");t.b("\n" + i);t.b("      <a href=\"");t.b(t.v(t.f("composeUrl",c,p,0)));t.b("\" class=\"bell-inbox-new-message\">Compose</a>");t.b("\n" + i);t.b("      <a href=\"");t.b(t.v(t.f("indexUrl",c,p,0)));t.b("\" class=\"bell-inbox-view-all\">View All</a>");t.b("\n" + i);t.b("    </span>");t.b("\n" + i);t.b("  </h2>");t.b("\n" + i);t.b("  <h2 class=\"bell-title notifications-title hide-phone bell-title-dummy\">Your Messages</h2>");t.b("\n" + i);t.b("  <div class=\"activity-container js-inbox-container capped\">");t.b("\n" + i);t.b("    <ul class=\"js-inbox-list\"></ul>");t.b("\n" + i);t.b("    <a href=\"");t.b(t.v(t.f("indexUrl",c,p,0)));t.b("\" class=\"js-show-all list-load-more\">See all messages</a>");t.b("\n" + i);t.b("    <div class=\"js-spin loading-spinner cfix\"></div>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</div>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/inbox/dialog/empty", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"inbox-empty\">No messages in your inbox.</div>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/inbox/dialog/error", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"inbox-empty\">Inbox is currently down for maintenance. Please check back later.</div>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/inbox/list/message", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<li class=\"inbox-list-item preview-item");if(t.s(t.f("unread",c,p,1),c,p,0,50,57,"{{ }}")){t.rs(c,p,function(c,p,t){t.b(" unread");});c.pop();}if(t.s(t.f("active",c,p,1),c,p,0,79,86,"{{ }}")){t.rs(c,p,function(c,p,t){t.b(" active");});c.pop();}t.b(" js-inbox-list-item\" data-id=\"");t.b(t.v(t.f("id",c,p,0)));t.b("\">");t.b("\n" + i);t.b("  <div class=\"form-item form-item-checkbox indicator checkbox\">");t.b("\n" + i);t.b("    <label class=\"checkbox\" for=\"preview-");t.b(t.v(t.f("id",c,p,0)));t.b("\">");t.b("\n" + i);t.b("      <input type=\"checkbox\" id=\"preview-");t.b(t.v(t.f("id",c,p,0)));t.b("\">");t.b("\n" + i);t.b("      <div class=\"checkbox-checkmark\"></div>");t.b("\n" + i);t.b("    </label>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("  <div class=\"indicator unread-indicator\"></div>");t.b("\n" + i);t.b("  <div class=\"meta\">");t.b("\n" + i);t.b("    <div class=\"timestamp js-updating-timestamp\" data-timestamp=\"");t.b(t.v(t.f("last_message_on",c,p,0)));t.b("\">");t.b(t.v(t.f("timestamp",c,p,0)));t.b("</div>");t.b("\n" + i);t.b("    <div class=\"tags");if(!t.s(t.f("sent_as_job",c,p,1),c,p,1,0,0,"")){if(!t.s(t.f("is_job",c,p,1),c,p,1,0,0,"")){t.b(" hide");};};t.b("\">");t.b("\n" + i);t.b("      ");if(t.s(t.f("sent_as_job",c,p,1),c,p,0,647,730,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("<span class=\"job-tag sent-job-tag beicons-pre beicons-pre-check\">sent as job</span>");});c.pop();}t.b("\n" + i);t.b("      ");if(t.s(t.f("folder",c,p,1),c,p,0,764,884,"{{ }}")){t.rs(c,p,function(c,p,t){if(t.s(t.f("is_job",c,p,1),c,p,0,775,873,"{{ }}")){t.rs(c,p,function(c,p,t){if(t.s(t.f("archived_by",c,p,1),c,p,0,791,857,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("<span class=\"job-tag archived-job-tag beicons-pre\">ARCHIVED</span>");});c.pop();}});c.pop();}});c.pop();}t.b("\n" + i);t.b("      ");if(t.s(t.f("is_job",c,p,1),c,p,0,913,978,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("<span class=\"job-tag beicons-pre beicons-pre-suitcase\">job</span>");});c.pop();}t.b("\n" + i);t.b("    </div>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("  <div class=\"info\">");t.b("\n" + i);if(t.s(t.f("isGroup",c,p,1),c,p,0,1047,1359,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("      <div class=\"inbox-image multiple-owners-grid\">");t.b("\n" + i);if(t.s(t.f("recipients",c,p,1),c,p,0,1124,1165,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("          <img src=\"");t.b(t.v(t.f("image",c,p,0)));t.b("\">");t.b("\n" + i);});c.pop();}t.b("      </div>");t.b("\n" + i);t.b("      <div class=\"user text-ellipsis\">");t.b("\n" + i);t.b("        ");t.b(t.v(t.f("byLine",c,p,0)));t.b("\n" + i);t.b("        <span class=\"js-unread-count");if(!t.s(t.f("unread",c,p,1),c,p,1,0,0,"")){t.b(" hide");};t.b("\">(");t.b(t.v(t.f("unreadCount",c,p,0)));t.b(")</span>");t.b("\n" + i);t.b("      </div>");t.b("\n" + i);});c.pop();}t.b("\n" + i);if(!t.s(t.f("isGroup",c,p,1),c,p,1,0,0,"")){if(t.s(t.d("recipients.0",c,p,1),c,p,0,1413,1609,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("        <img src=\"");t.b(t.v(t.f("image",c,p,0)));t.b("\" class=\"inbox-image\">");t.b("\n" + i);t.b("        <div class=\"user text-ellipsis\">");t.b(t.v(t.f("byLine",c,p,0)));t.b(" <span class=\"js-unread-count");if(!t.s(t.f("unread",c,p,1),c,p,1,0,0,"")){t.b(" hide");};t.b("\">(");t.b(t.v(t.f("unreadCount",c,p,0)));t.b(")</span></div>");t.b("\n" + i);});c.pop();}};t.b("    <div class=\"message text-ellipsis\">");if(t.s(t.f("is_reply",c,p,1),c,p,0,1696,1728,"{{ }}")){t.rs(c,p,function(c,p,t){t.b("<span class=\"reply-icon\"></span>");});c.pop();}t.b(t.v(t.f("message",c,p,0)));t.b("</div>");t.b("\n" + i);t.b("  </div>");t.b("\n" + i);t.b("</li>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+
+define("require/hgn!templates/inbox/dialog/unverified", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div>");t.b("\n" + i);t.b("  You need to have a verified email address to access this feature.</br>");t.b("\n" + i);t.b("  Haven't received a verification email yet? <a target=\"_blank\" href=\"");t.b(t.v(t.f("verify_url",c,p,0)));t.b("\">Click here.</a>");t.b("\n" + i);t.b("</div>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+define('be/trait/inboxNav',[ "jquery", "page_config", "moment", "nbd/util/extend", "be/modal/simple", "be/spinner", "inbox/Model/Message", "hgn!templates/html", "hgn!templates/inbox/dialog/main", "hgn!templates/inbox/dialog/empty", "hgn!templates/inbox/dialog/error", "hgn!templates/inbox/list/message", "hgn!templates/inbox/dialog/unverified" ], function(a, b, c, d, e, f, g, h, i, j, k, l, m) {
+    "use strict";
+    var n = a(document.body).hasClass("user-unverified"), o = "/inbox", p = o + "/compose";
+    return {
+        mustache: h,
+        templateData: function() {
+            var a = i({
+                indexUrl: o,
+                composeUrl: p
+            });
+            return {
+                title: "Inbox",
+                classes: [ "notifications", "inbox", "timeline-container", "js-inbox-nav-menu" ],
+                html: a
+            };
+        },
+        rendered: function() {
+            this._super(), this.$content = this.$view.find(".js-inbox-container"), this.$list = this.$view.find(".js-inbox-list"), 
+            this.$showAll = this.$view.find(".js-show-all"), this.$controls = this.$view.find(".js-inbox-chrome"), 
+            this.spinner = f.init(this.$view).hide(), this._bindEvents();
+        },
+        loading: function() {
+            this.spinner && this.spinner.show();
+        },
+        loaded: function() {
+            this.spinner && this.spinner.hide();
+        },
+        add: function(a) {
+            a.forEach(function(a) {
+                var b = new g(a);
+                this.$list.append(this._renderMessage(b));
+            }.bind(this));
+        },
+        reset: function() {
+            this.$empty && (this.$empty.remove(), this.$empty = null), this.$error && (this.$error.remove(), 
+            this.$error = null), this.$controls.show(), this.$list.empty();
+        },
+        empty: function() {
+            this.$empty = this.$empty || a(j()), this.$showAll.before(this.$empty);
+        },
+        showError: function() {
+            this.$error = this.$error || a(k()), this.$showAll.before(this.$error), this.$controls.hide();
+        },
+        _bindEvents: function() {
+            var b = this;
+            this.$list.on("click", "li", function() {
+                var c = a(this).data("id");
+                return n ? (b.hide(), void b._showUnverifiedWarningDialog()) : void (window.location.href = o + "/" + c);
+            }), this.$view.on("click", "a", function(a) {
+                n && (a.preventDefault(), b.hide(), b._showUnverifiedWarningDialog());
+            });
+        },
+        _renderMessage: function(a) {
+            var b = a.data();
+            return l(d(b, {
+                isGroup: b.recipients.length > 1
+            }));
+        },
+        _showUnverifiedWarningDialog: function() {
+            e({
+                title: "Please verify your email address",
+                html: m(),
+                buttons: [ {
+                    label: "Cancel",
+                    classes: [ "form-button-default", "js-confirm" ]
+                } ],
+                verify_url: b.ADOBE_VERIFY
+            });
+        }
+    };
+});
+define('be/View/Dialog/Menu/InboxNav',[ "nbd/util/extend", "be/View/Dialog/Menu/BaseView", "be/trait/inboxNav" ], function(a, b, c) {
+    "use strict";
+    return b.extend(c);
+});
+define('be/View/Dialog/Layover/InboxNav',[ "be/View/Dialog/Layover", "be/trait/inboxNav" ], function(a, b) {
+    "use strict";
+    var c = a.extend(b);
+    return c;
+});
+define('inbox/lib/loader',[ "be/xhr" ], function(a) {
+    "use strict";
+    function b(a) {
+        return function(b) {
+            var c = {};
+            if (!b) throw new Error("Response is not valid");
+            return c = b[a];
+        };
+    }
+    function c(b, c) {
+        return c = c || {}, a({
+            url: b,
+            type: "GET",
+            data: {
+                folder: c.folder,
+                offset_key: c.offsetKey,
+                q: c.query,
+                tag: c.tag
+            }
+        });
+    }
+    var d = "/v2/inbox", e = d + "/threads", f = d + "/threads/search", g = "/messages", h = "/v2/report/spam/thread", i = "/utilities/block", j = {
+        search: function(a) {
+            return c(f, a);
+        },
+        threads: function(a) {
+            return c(e, a);
+        },
+        pollThreads: function(b) {
+            return b = b || {}, a({
+                url: e,
+                type: "GET",
+                data: {
+                    folder: b.folder,
+                    polling_key: b.pollingKey,
+                    q: b.query,
+                    tag: b.tag
+                }
+            });
+        },
+        thread: function(c) {
+            return a({
+                url: e + "/" + c,
+                type: "GET"
+            }).then(b("thread"));
+        },
+        threadMessages: function(b, c) {
+            return a({
+                url: e + "/" + b + g,
+                type: "GET",
+                data: {
+                    offset_key: c
+                }
+            });
+        },
+        pollMessages: function(b, c) {
+            return a({
+                url: e + "/" + b + g,
+                type: "GET",
+                data: {
+                    polling_key: c
+                }
+            });
+        },
+        markRead: function(b) {
+            return a({
+                url: e + "/" + b,
+                type: "PATCH",
+                data: {
+                    is_read: 1
+                }
+            });
+        },
+        moveTo: function(b, c) {
+            return a({
+                url: e + "/" + b,
+                type: "PATCH",
+                data: {
+                    folder: c
+                }
+            });
+        },
+        markSpam: function(b) {
+            return a({
+                url: h + "/" + b,
+                type: "POST"
+            });
+        },
+        blockUser: function(b) {
+            return a({
+                url: i,
+                type: "post",
+                data: {
+                    user_id: b
+                }
+            });
+        },
+        deleteThreadForever: function(b) {
+            return a({
+                url: e + "/" + b,
+                type: "DELETE"
+            });
+        },
+        replyToThread: function(c, d, f) {
+            return a({
+                url: e + "/" + c + g,
+                type: "POST",
+                data: {
+                    message: d,
+                    is_job: f
+                }
+            }).then(b("message"));
+        },
+        markMessageRead: function(b, c) {
+            return a({
+                url: e + "/" + b + g + "/" + c,
+                type: "PATCH",
+                data: {
+                    is_read: 1
+                }
+            });
+        },
+        createNewThread: function(c) {
+            return a({
+                url: e,
+                type: "POST",
+                data: c
+            }).then(b("thread"));
+        }
+    };
+    return j;
+});
+define('be/Controller/Dialog/InboxNav',[ "nbd/trait/pubsub", "be/Controller/Dialog/Roulette", "be/View/Dialog/Menu/InboxNav", "be/View/Dialog/Layover/InboxNav", "inbox/lib/loader" ], function(a, b, c, d, e) {
+    "use strict";
+    var f = b.extend({
+        _initView: function() {
+            this._super.apply(this, arguments), this._view && this.listenTo(this._view, "show", this._refresh);
+        },
+        _refresh: function() {
+            this._view.loading(), e.threads().then(function(a) {
+                if (!a) throw new Error();
+                a = a.threads || [], this._view.loaded(), this._view.reset(), a.length ? this._view.add(a) : this._view.empty();
+            }.bind(this))["catch"](function() {
+                this._view.loaded(), this._view.reset(), this._view.showError();
+            }.bind(this));
+        }
+    }, {
+        VIEW_CLASS: {
+            phone: d,
+            tablet: c,
+            desktop: c
+        }
+    }).mixin(a);
+    return f;
+});
+define('be/inboxNav',[ "jquery", "has", "nbd/util/deparam", "be/xhr", "be/Controller/Dialog/InboxNav" ], function(a, b, c, d, e) {
+    "use strict";
+    var f, g = "/v2/notifications/count", h = "inbox-v1";
+    return f = {
+        init: function(c) {
+            var d = a(".js-email-menu", c);
+            d.length && (this.$message = d, this._dialog = new e(), this._dialog.setContext(d), 
+            b("localstorage") && this.update(window.sessionStorage.getItem("message-notifications") || 0), 
+            this._sync());
+        },
+        update: function(a) {
+            var b = 0 === +a;
+            this.$message.toggleClass("unread", !b).find(".notifications-count").text(a), this._dialog.block = b;
+        },
+        _sync: function() {
+            return d({
+                url: g,
+                type: "get",
+                data: {
+                    action_set: h
+                }
+            }).then(function(a) {
+                return b("localstorage") && window.sessionStorage.setItem("message-notifications", a.count), 
+                a.count;
+            }).then(f.update.bind(f));
+        }
+    };
+});
+define('wip/createloader',[ "nbd/trait/promise", "be/modal/simple" ], function(a, b) {
+    "use strict";
+    return function() {
+        var c = new a();
+        return require([ "wip/create" ], c.resolve.bind(c), function() {
+            b({
+                title: "There was a problem with your request",
+                html: "Please refresh the page to try again.",
+                buttons: [ {
+                    label: "Close",
+                    classes: [ "form-button-default", "js-close" ]
+                } ]
+            });
+        }), c;
+    };
+});
+
+define("require/hgn!templates/addWork", ["hogan"], function(hogan){ var tmpl = new hogan.Template({code: function (c,p,i) { var t=this;t.b(i=i||"");t.b("<div class=\"new-work-body cfix\">");t.b("\n" + i);t.b("  <a id=\"activity-new-work-project\" class=\"new-work-link-wrap\" href=\"");t.b(t.v(t.f("projectUrl",c,p,0)));t.b("\">");t.b("\n" + i);t.b("    <span class=\"new-work-link-icon\"></span>");t.b("\n" + i);t.b("    <span class=\"new-work-link\">Add Project</span>");t.b("\n" + i);t.b("  </a>");t.b("\n" + i);t.b("  <span id=\"activity-new-work-wip\" class=\"new-work-link-wrap wip-action wip-action-create fake-link js-wip-create\">");t.b("\n" + i);t.b("    <span class=\"new-work-link-icon\"></span>");t.b("\n" + i);t.b("    <span class=\"new-work-link\">Add Work in Progress</span>");t.b("\n" + i);t.b("  </span>");t.b("\n" + i);t.b("</div>");t.b("\n");return t.fl(); },partials: {}, subs: {  }}, "", hogan), extend = function(a, b) { for (var k in b) { a[k] = b[k]; } return a; }, parts = {  "": null}, render = function() { return tmpl.render.apply(tmpl, arguments); }; tmpl.ri = function(context, partials, indent) { return this.r(context, extend(parts, partials), indent); }; render.template = tmpl; return render;}); 
+define('be/View/Menu/AddWork',[ "jquery", "be/View/Dialog/Menu", "wip/createloader", "hgn!templates/addWork" ], function(a, b, c, d) {
+    "use strict";
+    var e = b.extend({
+        mustache: d,
+        attachment: ".js-nav-primary",
+        templateData: function() {
+            return {
+                classes: [ "new-work-menu" ],
+                projectUrl: "/portfolio/editor"
+            };
+        },
+        position: function(a) {
+            return this._super(a, {
+                my: "left top",
+                at: "left bottom",
+                collision: "none"
+            });
+        },
+        rendered: function() {
+            this._super(), this.bindEvents();
+        },
+        bindEvents: function() {
+            this.$view.on("click", ".js-wip-create", function() {
+                this.hide(), c().then(function(a) {
+                    a.render();
+                });
+            }.bind(this));
+        }
+    });
+    return e;
+});
+define('be/Controller/Dialog/AddWork',[ "be/Controller/Dialog/Roulette", "be/View/Menu/AddWork" ], function(a, b) {
+    "use strict";
+    var c = a.extend({}, {
+        VIEW_CLASS: {
+            desktop: b
+        }
+    });
+    return c;
+});
+define('nav',[ "page_constants", "jquery", "has", "nbd/event", "be/bell", "be/inboxNav", "be/Controller/Dialog/AddWork" ], function(a, b, c, d, e, f, g) {
+    "use strict";
+    function h(a) {
+        if (a.length) {
+            var b = a, c = b.find(".js-nav-search-form-input"), d = b.find(".js-nav-search");
+            d.on("click", function() {
+                c.trigger("focus");
+            }), c.on("focus", function() {
+                d.addClass("active"), k.addClass("search-active");
+            }).on("blur", function() {
+                d.toggleClass("active", !!this.value), k.toggleClass("search-active", !!this.value);
+            });
+        }
+    }
+    function i(a) {
+        k.find(".js-profile-image-50").attr("src", a);
+    }
+    function j() {
+        h(b(".js-nav-search-form")), l.length && new g().setContext(l), f.init(), e.init();
+    }
+    var k = b(".js-nav-primary"), l = b(".js-new-work-button");
+    return {
+        init: j,
+        updateProfileImage: i
+    };
+});
+!function(a) {
+    function b() {
+        function a() {
+            c.forEach(function(a) {
+                a();
+            }), c.length = 0;
+        }
+        var b = 0, c = [];
+        this.then = function(a) {
+            return 0 === b ? void c.push(a) : void (b > 0 && a());
+        }, this.resolve = function() {
+            b = 1, a();
+        }, this.reject = function() {
+            b = -1, c.length = 0;
+        };
+    }
+    !function() {
+        var b = "";
+        try {
+            b = JSON.parse($("#global-config-json").text());
+        } catch (c) {}
+        b.CBSTR && b.ASSETSURL && (a.config({
+            baseUrl: b.ASSETSURL + "js",
+            urlArgs: b.CBSTR
+        }), window.CKEDITOR_BASEPATH = b.ASSETSURL + "js/vendor/misc/ckeditor/");
+    }();
+    var c = new b();
+    require([ "jquery", "detect", "log", "be/errorLogger", "be/navigation", "be/social", "be/responsive", "be/remoteLogger", "be/zenDesk", "deprecated/globalAjax", "nav", "sso/config" ], function(b, d, e, f, g, h, i, j, k, l, m, n) {
+        "use strict";
+        var o = b(document.body);
+        d.init(o), f.init(a, window, e), k.init(), h.init(), i.init(), j.init(), m.init(), 
+        g.init(), n.init(o), l.init(), c.resolve();
+    }, c.reject), window.require = function(b, d, e) {
+        return d ? a(b, function() {
+            var a = arguments;
+            c.then(function() {
+                d.apply(null, a);
+            });
+        }, e) : a(b);
+    };
+}(require);
+define("network", function(){});
+

@@ -11,6 +11,8 @@ JKT Webpage v2
 - [X] Add carousuel
 - [X] Make it responsive
 - [ ] Add Animate.css
+- [ ] Resize images
+- [ ] Add JS commands to navbar
 - [ ] Make it DRY
 
 ## Next
