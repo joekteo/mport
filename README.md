@@ -17,4 +17,4 @@ JKT Webpage v2
 - [ ] Make it DRY
 
 ## Next
-- [ ] Launch on Heroku
+- [ ] Temp launch on Heroku
