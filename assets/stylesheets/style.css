@@ -196,11 +196,12 @@ hr {
 
 /*** Contact ***/
 .contact-container {
-  background: url(../images/no12gallery.JPG);
+  background: url("../images/no12gallery.JPG");
   background-repeat: no-repeat;
   background-size: cover;
   color: #a1855b;
   height: auto;
+  min-height: 200px;
   padding-bottom: 80px;
   text-align: center;
   width: 100%;
