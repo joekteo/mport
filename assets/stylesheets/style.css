@@ -199,7 +199,7 @@ hr {
   background: url("../images/no12gallery.JPG");
   background-size: cover;
   color: #a1855b;
-  height: auto;
+  /*height: auto;*/
   min-height: 200px;
   padding-bottom: 80px;
   text-align: center;
