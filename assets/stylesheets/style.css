@@ -305,6 +305,19 @@ hr {
     max-width: 600px;
     min-height: 350px;
   }
+
+  .col-md-6 img {
+    height: 100%;
+    width: 100%;
+  }
+
+  #about {
+    padding-bottom: 0;
+  }
+
+  #last-img {
+    padding-bottom: 0;
+  }
 }
 
 @media screen and (max-width: 720px) {

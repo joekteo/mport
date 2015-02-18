@@ -11,10 +11,11 @@ JKT Webpage v2
 - [X] Add carousel
 - [X] Make it responsive
 - [X] Add Animate.css
-- [ ] Resize images
-- [ ] Add JS commands to navbar
+- [X] Resize images
+- [X] Add JS commands to navbar
+- [X] Temp launch on Heroku
 - [ ] Fix carousel image
-- [ ] Make it DRY
 
 ## Next
-- [ ] Temp launch on Heroku
+- [ ] Make it DRY
+- [ ] Add Lightbox
